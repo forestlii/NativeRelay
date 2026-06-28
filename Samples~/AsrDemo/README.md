@@ -9,24 +9,27 @@ result from a background thread back to the main thread to drive a tiny fake dia
 
 ## What it shows · 演示了什么
 
-Click **Speak** to pretend you said something. The business code fires a `Recognize`
-request; a `MockChannel` returns a "recognized phrase" on a **background thread** after a
-random delay; NativeRelay relays it safely to the **main thread**, where the business
-turns the text into an NPC reply. This is exactly the same relay mechanism as the basic
-sample — only here the payload is *text* instead of an echoed seed, showing a realistic
-"native async result → business logic" flow.
+Type what you want to "say" (or click a quick phrase), then click **Speak**. The business
+code fires a `Recognize` request carrying that text as the payload; a `MockChannel` returns
+it as the "recognized text" on a **background thread** after a random delay; NativeRelay
+relays it safely to the **main thread**, where the business turns the text into an NPC
+reply. This is the same relay mechanism as the basic sample — only here the payload is
+*text*, showing a realistic "native async result → business logic" flow. (There is no real
+microphone, so *you* provide the spoken text and the mock echoes it back as the result.)
 
-点 **Speak** 模拟"说了一句话"。业务代码发一个 `Recognize` 请求；`MockChannel` 在**子线程**
-随机延迟后返回一段"识别出的短语"；NativeRelay 把它安全中继回**主线程**，业务在那里把文本变成
-NPC 回应。这和基础示例是同一套中继机制——只是这里的载荷是*文本*而非回显的 seed，
-展示一个更真实的"原生异步结果 → 业务逻辑"流程。
+在输入框打你想"说"的话（或点一个快捷短语），再点 **Speak**。业务代码会发一个 `Recognize` 请求，
+把这句话作为 payload 带下去；`MockChannel` 在**子线程**随机延迟后把它当"识别出的文本"返回；
+NativeRelay 安全中继回**主线程**，业务在那里把文本变成 NPC 回应。这和基础示例是同一套中继机制——
+只是载荷是*文本*，展示更真实的"原生异步结果 → 业务逻辑"流程。（没有真实麦克风，所以由*你*提供
+"说的文本"，Mock 把它原样当识别结果回传。）
 
 ## How to run · 如何运行
 
 1. Create an empty scene. / 新建一个空场景。
 2. Add an empty GameObject and attach the **`AsrDemo`** component
    (`Likeon.NativeRelay.Samples.AsrDemo`). / 建一个空 GameObject，挂上 **`AsrDemo`** 组件。
-3. Press **Play** and click **Speak**. / 按 **Play**，点 **Speak**。
+3. Press **Play**, type a sentence (or click a quick phrase to fill the box), then click
+   **Speak**. / 按 **Play**，在输入框打一句话（或点快捷短语填入），再点 **Speak**。
 
 ## Swapping in a real ASR channel · 换成真实 ASR 通道
 
