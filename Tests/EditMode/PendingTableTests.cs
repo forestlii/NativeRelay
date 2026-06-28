@@ -66,6 +66,21 @@ namespace NativeRelay.Tests
         }
 
         [Test]
+        public void DrainAll_RemovesEveryEntry_AndHandsEachToHandler()
+        {
+            var t = new PendingTable();
+            t.Register(1, Ctx(0));
+            t.Register(2, Ctx(0));
+            t.Register(3, Ctx(0));
+
+            var drained = new List<long>();
+            t.DrainAll((seed, _) => drained.Add(seed));
+
+            Assert.That(drained, Is.EquivalentTo(new[] { 1L, 2L, 3L }), "每个未完成项都应被交出");
+            Assert.That(t.Count, Is.EqualTo(0), "DrainAll 后表必须清空");
+        }
+
+        [Test]
         public void ScanTimeouts_NoExpired_DoesNotFire()
         {
             var t = new PendingTable();

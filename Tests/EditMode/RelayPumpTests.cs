@@ -89,6 +89,30 @@ namespace NativeRelay.Tests
         }
 
         [Test]
+        public void CancelAll_FiresDisposedForAllPending_AndClears()
+        {
+            var pump = new RelayPump(timeoutSeconds: 100);
+            var disposedSeeds = new List<long>();
+            int wrongKind = 0;
+            for (int s = 1; s <= 3; s++)
+            {
+                long seed = s;
+                pump.Register(seed, _ => Assert.Fail("不应成功"),
+                    err =>
+                    {
+                        if (err.Kind != BridgeErrorKind.Disposed || err.Seed != seed) wrongKind++;
+                        disposedSeeds.Add(seed);
+                    }, now: 0);
+            }
+
+            pump.CancelAll();
+
+            Assert.That(disposedSeeds, Is.EquivalentTo(new[] { 1L, 2L, 3L }), "所有未完成请求都应收到 Disposed");
+            Assert.That(wrongKind, Is.EqualTo(0), "错误类别应为 Disposed 且 seed 对得上");
+            Assert.That(pump.PendingCount, Is.EqualTo(0), "CancelAll 后 pending 清空");
+        }
+
+        [Test]
         public void Pump_ResultArrivesBeforeTimeout_NoTimeoutFired()
         {
             var pump = new RelayPump(timeoutSeconds: 1.0);

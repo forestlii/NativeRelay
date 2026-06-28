@@ -76,6 +76,31 @@ namespace NativeRelay
         }
 
         /// <summary>
+        /// 排干<b>全部</b>未完成请求（用于 Dispose 收尾）：逐个移除并交给 <paramref name="handler"/>，最终清空。
+        /// 先收集 key 到复用缓冲再处理，避免遍历中改集合（handler 内即便误调也安全）。
+        /// </summary>
+        public void DrainAll(Action<long, PendingContext> handler)
+        {
+            if (handler == null) throw new ArgumentNullException(nameof(handler));
+
+            _timedOutScratch.Clear();
+            foreach (var kv in _map)
+            {
+                _timedOutScratch.Add(kv.Key);
+            }
+
+            for (int i = 0; i < _timedOutScratch.Count; i++)
+            {
+                long seed = _timedOutScratch[i];
+                if (_map.TryGetValue(seed, out var ctx))
+                {
+                    _map.Remove(seed);
+                    handler(seed, ctx);
+                }
+            }
+        }
+
+        /// <summary>
         /// 扫描并清理超时请求：把满足 <c>(now - StartTime) &gt; timeout</c>（严格大于）的项移除，
         /// 并逐个交给 <paramref name="onTimeout"/>（在此处理超时通知，调用方应缓存该委托以免分配）。
         /// 无超时项时仅遍历一次字典（结构体枚举器，零分配）。

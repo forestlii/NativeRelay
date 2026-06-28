@@ -117,5 +117,42 @@ namespace NativeRelay.Tests
             Assert.That(ch.Disposed, Is.True, "应 Dispose 底层通道");
             Assert.That(() => bridge.Request(1, null, _ => { }), Throws.TypeOf<ObjectDisposedException>());
         }
+
+        [Test]
+        public void Dispose_FiresDisposedForPending_AndClears()
+        {
+            var ch = new FakeChannel();
+            var bridge = NewBridge(ch, () => 0);
+
+            var disposedSeeds = new List<long>();
+            int wrongKind = 0;
+            for (int i = 0; i < 3; i++)
+            {
+                long captured = 0;
+                captured = bridge.Request(1, null, _ => Assert.Fail("不应成功"),
+                    err =>
+                    {
+                        if (err.Kind != BridgeErrorKind.Disposed || err.Seed != captured) wrongKind++;
+                        disposedSeeds.Add(captured);
+                    });
+            }
+            Assert.That(bridge.PendingCount, Is.EqualTo(3));
+
+            bridge.Dispose();
+
+            Assert.That(disposedSeeds.Count, Is.EqualTo(3), "所有未完成请求都应收到 Disposed 收尾");
+            Assert.That(wrongKind, Is.EqualTo(0), "应为 Disposed 且 seed 对得上");
+            Assert.That(bridge.PendingCount, Is.EqualTo(0), "Dispose 后 pending 清空，无泄漏");
+        }
+
+        [Test]
+        public void Dispose_Idempotent()
+        {
+            var ch = new FakeChannel();
+            var bridge = NewBridge(ch, () => 0);
+            bridge.Request(1, null, _ => { }, _ => { });
+            bridge.Dispose();
+            Assert.DoesNotThrow(() => bridge.Dispose(), "重复 Dispose 应安全无副作用");
+        }
     }
 }

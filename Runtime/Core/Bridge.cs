@@ -95,12 +95,16 @@ namespace NativeRelay
             _pump.Pump(_clock());
         }
 
-        /// <summary>关闭桥：退订通道回调、Dispose 底层通道。之后 <see cref="Request"/> 抛 <see cref="ObjectDisposedException"/>。</summary>
+        /// <summary>
+        /// 关闭桥：① 退订通道回调（停止新结果入队）；② 给所有未完成请求回调 <see cref="BridgeError"/> Disposed
+        /// 并清空 pending（防泄漏，业务能据此收尾）；③ Dispose 底层通道。之后 <see cref="Request"/> 抛 <see cref="ObjectDisposedException"/>。
+        /// </summary>
         public void Dispose()
         {
             if (_disposed) return;
             _disposed = true;
             _channel.OnResult -= _onChannelResult;
+            _pump.CancelAll();
             _channel.Dispose();
         }
     }

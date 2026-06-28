@@ -34,6 +34,7 @@ namespace NativeRelay
         // 缓存的委托（避免每帧分配闭包）
         private readonly Action<RelayMessage> _dispatchOne;
         private readonly Action<long, PendingContext> _onTimeout;
+        private readonly Action<long, PendingContext> _onDispose;
 
         /// <param name="timeoutSeconds">请求超时阈值（秒）；超过则回调 <see cref="BridgeError"/> Timeout。</param>
         /// <param name="capacity">队列与 pending 的初始容量（按峰值预估可免运行期扩容分配）。</param>
@@ -44,6 +45,7 @@ namespace NativeRelay
             _pending = new PendingTable(capacity);
             _dispatchOne = DispatchOne;   // 一次性绑定方法组，后续复用
             _onTimeout = OnTimeout;
+            _onDispose = OnDispose;
         }
 
         /// <summary>当前未完成请求数（诊断 / 测试用）。</summary>
@@ -79,6 +81,14 @@ namespace NativeRelay
         }
 
         /// <summary>
+        /// 主线程：取消并清空所有未完成请求，逐个回调 <see cref="BridgeError"/> Disposed（用于桥关闭收尾，防 pending 泄漏）。
+        /// </summary>
+        public void CancelAll()
+        {
+            _pending.DrainAll(_onDispose);
+        }
+
+        /// <summary>
         /// 主线程：每帧调用。① 排干队列、按 seed 把结果派发给对应回调；② 扫描并清理超时请求。
         /// </summary>
         /// <param name="now">当前时刻（秒），用于超时判定。</param>
@@ -104,6 +114,11 @@ namespace NativeRelay
         private void OnTimeout(long seed, PendingContext ctx)
         {
             ctx.OnError?.Invoke(BridgeError.Timeout(seed));
+        }
+
+        private void OnDispose(long seed, PendingContext ctx)
+        {
+            ctx.OnError?.Invoke(BridgeError.Disposed(seed));
         }
     }
 }
