@@ -1,0 +1,28 @@
+# 统一文本规范化：仓库内存 LF，避免跨平台行尾噪音
+* text=auto eol=lf
+
+# 源码/文本明确按文本处理
+*.cs        text eol=lf
+*.json      text eol=lf
+*.asmdef    text eol=lf
+*.md        text eol=lf
+*.csproj    text eol=lf
+*.gitignore text eol=lf
+
+# Windows 脚本用 CRLF（PowerShell 友好）
+*.ps1       text eol=crlf
+
+# Unity 资产二进制/合并策略
+*.meta      text eol=lf
+*.unity     merge=unityyamlmerge eol=lf
+*.prefab    merge=unityyamlmerge eol=lf
+*.asset     merge=unityyamlmerge eol=lf
+
+# 真二进制（防止被当文本破坏）
+*.png       binary
+*.jpg       binary
+*.gif       binary
+*.dll       binary
+*.so        binary
+*.a         binary
+*.aar       binary

@@ -1,0 +1,36 @@
+{
+  "name": "com.like.nativerelay",
+  "version": "0.1.0-dev",
+  "displayName": "NativeRelay",
+  "description": "Thread-safe relay for native async callbacks in Unity, dispatched on the main thread, one request <-> one result. Zero-GC seed + pending-table + double-buffer-queue bridge between native worker-thread callbacks and your C# business layer.",
+  "unity": "6000.4",
+  "license": "MIT",
+  "keywords": [
+    "native",
+    "bridge",
+    "async",
+    "callback",
+    "thread",
+    "main-thread",
+    "dispatcher",
+    "zero-gc",
+    "jni",
+    "interop"
+  ],
+  "author": {
+    "name": "李克 (forestlii)",
+    "url": "https://github.com/forestlii"
+  },
+  "samples": [
+    {
+      "displayName": "Basic Mock Demo",
+      "description": "Fire concurrent requests through a pure-C# MockChannel and watch them dispatched on the main thread, one seed <-> one result.",
+      "path": "Samples~/BasicMockDemo"
+    },
+    {
+      "displayName": "ASR Demo",
+      "description": "MockChannel simulates speech->text results driving a fake dialogue UI (no real ASR engine, no key, no device).",
+      "path": "Samples~/AsrDemo"
+    }
+  ]
+}

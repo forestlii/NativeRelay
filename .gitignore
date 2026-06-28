@@ -1,0 +1,60 @@
+# === 本地保留、不上传公开仓库的内容（只留与框架强相关的代码/测试/包元数据）===
+# 活记忆 / 个人语境文档 / 过程账本：本地接力用，不进公开包
+记忆.md
+记忆.md.meta
+CLAUDE.md
+CLAUDE.md.meta
+# HANDOFF.md 等设计/交接稿（个人语境），本地保留
+/docs/
+docs.meta
+# devlog / decisions.md 决策账本，本地保留
+/MD/
+MD.meta
+# 开发期工具：CI 脚本 + dotnet 快测回路，本地保留（消费者用不到）
+/scripts/
+scripts.meta
+/DotnetTests~/
+
+# === Claude local settings ===
+.claude/
+
+# === Sibling dev/test Unity project (lives outside repo, but ignore if nested) ===
+/NativeRelay-Dev/
+/Dev~/
+
+# === Unity-generated (in case this package is opened inside a project) ===
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+
+# === Unity meta noise we don't want to commit for ignored content ===
+*.pidb
+*.booproj
+*.svd
+*.userprefs
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+
+# === IDE / OS ===
+.vs/
+.idea/
+.vscode/
+*.DotSettings.user
+.DS_Store
+Thumbs.db
+
+# === Build/test artifacts ===
+*.log
