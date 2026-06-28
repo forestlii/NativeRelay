@@ -1,6 +1,6 @@
 using System;
 
-namespace NativeRelay
+namespace Likeon.NativeRelay
 {
     /// <summary>子线程回传的一条结果：(seed, 结果字节)。值类型，入队不额外堆分配。</summary>
     public readonly struct RelayMessage

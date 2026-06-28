@@ -1,6 +1,6 @@
 using System.Threading;
 
-namespace NativeRelay
+namespace Likeon.NativeRelay
 {
     /// <summary>
     /// 请求序号（seed）生成器：每次请求产出一个唯一、单调递增的 <see cref="long"/>。

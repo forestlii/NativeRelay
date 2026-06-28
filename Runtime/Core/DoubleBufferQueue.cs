@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace NativeRelay
+namespace Likeon.NativeRelay
 {
     /// <summary>
     /// 线程安全的<b>双缓冲</b>队列：多个子线程并发 <see cref="Enqueue"/> 写入，单个主线程 <see cref="Consume"/> 排干。

@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 
-namespace NativeRelay
+namespace Likeon.NativeRelay
 {
     /// <summary>
     /// 纯 C# 模拟的原生通道：<see cref="Send"/> 被调用后，起一个后台线程，随机延迟若干毫秒，

@@ -1,6 +1,6 @@
 using System;
 
-namespace NativeRelay
+namespace Likeon.NativeRelay
 {
     /// <summary>
     /// <b>原生层抽象</b>：插件通用性的核心——原生层只是一个可替换实现。

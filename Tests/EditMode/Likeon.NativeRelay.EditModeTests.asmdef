@@ -1,8 +1,8 @@
 {
-    "name": "NativeRelay.EditModeTests",
-    "rootNamespace": "NativeRelay.Tests",
+    "name": "Likeon.NativeRelay.EditModeTests",
+    "rootNamespace": "Likeon.NativeRelay.Tests",
     "references": [
-        "NativeRelay.Runtime",
+        "Likeon.NativeRelay.Runtime",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

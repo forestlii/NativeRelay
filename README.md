@@ -18,4 +18,4 @@
 UPM `git url` 安装与 OpenUPM 将在发布（M4）时提供。
 
 ---
-作者：李克 / [forestlii](https://github.com/forestlii) · License: MIT
+作者：Likeon · GitHub [forestlii](https://github.com/forestlii) · License: MIT · © 2026 Likeon

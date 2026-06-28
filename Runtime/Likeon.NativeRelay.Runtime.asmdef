@@ -1,6 +1,6 @@
 {
-    "name": "NativeRelay.Runtime",
-    "rootNamespace": "NativeRelay",
+    "name": "Likeon.NativeRelay.Runtime",
+    "rootNamespace": "Likeon.NativeRelay",
     "references": [],
     "includePlatforms": [],
     "excludePlatforms": [],

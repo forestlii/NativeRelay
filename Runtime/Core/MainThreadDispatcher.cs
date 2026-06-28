@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace NativeRelay
+namespace Likeon.NativeRelay
 {
     /// <summary>
     /// 唯一一个依赖 UnityEngine 的核心类：驱动 <see cref="Bridge"/> 的「每帧主线程派发」的<b>薄壳</b>。

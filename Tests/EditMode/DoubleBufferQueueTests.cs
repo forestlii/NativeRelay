@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using NativeRelay;
+using Likeon.NativeRelay;
 using NUnit.Framework;
 
-namespace NativeRelay.Tests
+namespace Likeon.NativeRelay.Tests
 {
     // 纯逻辑测试（dotnet 快测 + Unity EditMode 共享）：双缓冲队列的正确性。
     // 零 GC 由 dotnet 侧 ZeroAllocTests（GC 字节）与 Unity PlayMode（Is.Not.AllocatingGCMemory）分别覆盖。

@@ -1,4 +1,4 @@
-namespace NativeRelay
+namespace Likeon.NativeRelay
 {
     /// <summary>桥的错误类别。请求未能以正常结果收尾时，业务通过 onError 回调收到。</summary>
     public enum BridgeErrorKind

@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using NativeRelay;
+using Likeon.NativeRelay;
 using NUnit.Framework;
 
-namespace NativeRelay.Tests
+namespace Likeon.NativeRelay.Tests
 {
     // 纯逻辑测试：dotnet 快测 + Unity EditMode 共享此文件（只用约束模型 Assert.That，NUnit3/4 通用，无 UnityEngine 依赖）。
     public sealed class SeedGeneratorTests

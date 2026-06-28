@@ -1,7 +1,7 @@
-using NativeRelay;
+using Likeon.NativeRelay;
 using NUnit.Framework;
 
-namespace NativeRelay.Tests
+namespace Likeon.NativeRelay.Tests
 {
     public sealed class BridgeErrorTests
     {

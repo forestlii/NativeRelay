@@ -2,12 +2,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
-using NativeRelay;
+using Likeon.NativeRelay;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
 
-namespace NativeRelay.Tests.PlayMode
+namespace Likeon.NativeRelay.Tests.PlayMode
 {
     // PlayMode：验证「派发真的发生在主线程」与「稳态零 GC」——这两条机器只能在 Unity 运行时里证。
     // 逻辑层的一一对应/乱序/超时已由 dotnet EditMode 快测覆盖，这里只补 Unity 运行时特有的两条。

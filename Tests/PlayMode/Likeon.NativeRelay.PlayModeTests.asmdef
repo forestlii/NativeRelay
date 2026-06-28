@@ -1,8 +1,8 @@
 {
-    "name": "NativeRelay.PlayModeTests",
-    "rootNamespace": "NativeRelay.Tests",
+    "name": "Likeon.NativeRelay.PlayModeTests",
+    "rootNamespace": "Likeon.NativeRelay.Tests",
     "references": [
-        "NativeRelay.Runtime",
+        "Likeon.NativeRelay.Runtime",
         "UnityEngine.TestRunner"
     ],
     "includePlatforms": [],

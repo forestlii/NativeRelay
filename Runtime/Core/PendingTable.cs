@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace NativeRelay
+namespace Likeon.NativeRelay
 {
     /// <summary>
     /// 一次未完成请求的上下文：成功回调 + 失败回调 + 发起时间戳。

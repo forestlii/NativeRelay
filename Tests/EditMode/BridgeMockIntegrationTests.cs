@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
-using NativeRelay;
+using Likeon.NativeRelay;
 using NUnit.Framework;
 
-namespace NativeRelay.Tests
+namespace Likeon.NativeRelay.Tests
 {
     // 端到端集成（逻辑层）：Bridge + 真实 MockChannel，100 并发乱序回来，循环 Pump 直到排干。
     // 验证 M1 核心契约：全部正确派发、seed↔payload 一一对应零错配、无丢失/重复、pending 归零。

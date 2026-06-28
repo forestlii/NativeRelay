@@ -13,7 +13,7 @@ and the out-of-order ("first-back, first-dispatched") arrival.
 ## How to run
 1. Create an empty scene.
 2. Add an empty GameObject and attach the **`BasicMockDemo`** component
-   (`NativeRelay.Samples.BasicMockDemo`).
+   (`Likeon.NativeRelay.Samples.BasicMockDemo`).
 3. Press **Play** and click **Send**.
 
 The UI is drawn with IMGUI (`OnGUI`) on purpose, so the sample has **zero extra

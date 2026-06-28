@@ -1,6 +1,6 @@
 using System;
 
-namespace NativeRelay
+namespace Likeon.NativeRelay
 {
     /// <summary>
     /// 插件对外主入口：把「发起异步请求 → 安全收回结果」整条链路封装成一个调用。

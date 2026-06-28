@@ -5,6 +5,9 @@ All notable changes to NativeRelay are documented here. Format loosely follows
 
 ## [Unreleased]
 
+### Changed
+- Rebrand to the `Likeon` namespace: C# namespace `NativeRelay` → `Likeon.NativeRelay`, package id `com.like.nativerelay` → `com.likeon.nativerelay`, asmdefs renamed to `Likeon.NativeRelay.*`. Author/copyright is now `Likeon` (still MIT). The product display name stays "NativeRelay". (Breaking for the pre-release `0.1.0-dev`: re-install under the new package id.)
+
 ### Added
 - UPM package skeleton (min Unity 6), asmdef layout (`NativeRelay.Runtime`, `NativeRelay.EditModeTests`, `NativeRelay.PlayModeTests`), MIT license.
 - Core relay link: `SeedGenerator` (Interlocked), `DoubleBufferQueue<T>` (zero-GC double buffer), `PendingTable` (+ timeout scan), `BridgeError`, `INativeChannel` contract + `MockChannel`, `RelayPump` (pure-C# core, no UnityEngine dependency), `Bridge` (public entry), `MainThreadDispatcher` (MonoBehaviour shell).

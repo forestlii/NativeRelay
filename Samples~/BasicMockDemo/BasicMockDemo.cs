@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using NativeRelay;
+using Likeon.NativeRelay;
 using UnityEngine;
 
-namespace NativeRelay.Samples
+namespace Likeon.NativeRelay.Samples
 {
     /// <summary>
     /// NativeRelay 最小示例：点按钮发若干请求，结果经 MockChannel 在<b>子线程</b>随机延迟后回来，

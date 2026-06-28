@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Concurrent;
 using System.Threading;
-using NativeRelay;
+using Likeon.NativeRelay;
 using NUnit.Framework;
 
-namespace NativeRelay.Tests
+namespace Likeon.NativeRelay.Tests
 {
     // MockChannel 同时是 INativeChannel 契约的测试载体（接口本身无行为）。
     // 用小延迟（1~10ms）+ CountdownEvent 等待，保证测试快且稳；验证「子线程乱序回来仍 seed↔payload 一一对应」。

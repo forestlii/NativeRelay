@@ -1,5 +1,5 @@
 {
-  "name": "com.like.nativerelay",
+  "name": "com.likeon.nativerelay",
   "version": "0.1.0-dev",
   "displayName": "NativeRelay",
   "description": "Thread-safe relay for native async callbacks in Unity, dispatched on the main thread, one request <-> one result. Zero-GC seed + pending-table + double-buffer-queue bridge between native worker-thread callbacks and your C# business layer.",
@@ -18,7 +18,7 @@
     "interop"
   ],
   "author": {
-    "name": "李克 (forestlii)",
+    "name": "Likeon",
     "url": "https://github.com/forestlii"
   },
   "samples": [
