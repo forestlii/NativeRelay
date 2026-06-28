@@ -5,6 +5,9 @@ All notable changes to NativeRelay are documented here. Format loosely follows
 
 ## [Unreleased]
 
+### Added
+- `AndroidChannel` — the C# side of a generic Android (JNI) relay channel template (passes `seed`/`command`/`payload` to Java and receives results back via a callback proxy). Compile-verified; the companion Java `.aar` and on-device verification are pending (see `docs/native-android.md` for the Java contract and build steps).
+
 ## [0.1.0] - 2026-06-29
 
 First public release.
