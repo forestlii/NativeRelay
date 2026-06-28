@@ -156,6 +156,37 @@ P-Invoke), BLE, location, or any SDK.
 `CreateBridge(new AndroidChannel())`，其余代码不变。iOS（Objective-C/Swift 经 P-Invoke）、
 蓝牙、定位或任意 SDK 都是同样的写法。
 
+### Where the native code lives · 原生代码在哪、怎么打包
+
+**This package is 100% C#** — it contains no `.java` / `.aar` / `.so`. The native side is
+*your* `INativeChannel` implementation, because what it does (recording, ASR, BLE, …) is
+project-specific. So installing this package via the git URL pulls **only the C# framework**;
+no native source comes down (there is none here).
+
+**本包是 100% C#** —— 不含任何 `.java` / `.aar` / `.so`。原生侧是*你的* `INativeChannel` 实现，
+因为它具体做什么（录音、ASR、蓝牙……）因项目而异。所以通过 git URL 安装本包**只会拉到 C# 框架**，
+不会拉下任何原生源码（这里根本没有）。
+
+In a real mobile build, the native layer ships as a **prebuilt binary**, not loose source:
+
+真实移动端发布时，原生层以**预编译二进制**形式分发，而非散落的源码：
+
+- **Android** — build your Java/Kotlin in Android Studio into an **`.aar`** (or `.jar`), drop it
+  under `Assets/Plugins/Android/`; Unity/Gradle bundles it. The C# `AndroidChannel` calls it
+  via `AndroidJavaObject` / `AndroidJavaClass` (JNI).
+  **安卓** —— 在 Android Studio 把 Java/Kotlin 编成 **`.aar`**（或 `.jar`），放进
+  `Assets/Plugins/Android/`，Unity/Gradle 打包时并入；C# 侧 `AndroidChannel` 用
+  `AndroidJavaObject` / `AndroidJavaClass`（JNI）调用它。
+- **iOS** — build a `.framework` / `.a` and call it from C# via `[DllImport]` (P/Invoke).
+  **iOS** —— 编成 `.framework` / `.a`，C# 经 `[DllImport]`（P/Invoke）调用。
+
+> A package *can* ship native binaries (e.g. `Runtime/Plugins/Android/xxx.aar`) and then git
+> install would pull them — that's how native plugins are distributed. NativeRelay's core
+> deliberately does not, to stay pure-C#, tiny, and engine-portable.
+>
+> UPM 包*可以*携带原生二进制（如 `Runtime/Plugins/Android/xxx.aar`），那样 git 安装就会把它拉下来——
+> 这正是原生插件的分发方式。NativeRelay 核心刻意不带，以保持纯 C#、体积小、易跨引擎移植。
+
 ## Samples · 示例
 
 Import via Package Manager → NativeRelay → **Samples** · 在 Package Manager → NativeRelay → **Samples** 里导入：

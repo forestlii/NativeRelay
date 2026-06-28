@@ -114,3 +114,21 @@ public sealed class Bridge {
 `command` is an `int` on purpose: it crosses threads and the JNI/P-Invoke boundary with
 zero allocation and switches cleanly on the native side. Define your own `enum` in your
 project and cast to `int` at the call site.
+
+## Packaging: where the native layer lives
+
+The framework package is **100% C#** — it carries no `.java` / `.aar` / `.so`. The native
+side is an `INativeChannel` implementation, and what it does (recording, ASR, BLE, …) is
+project-specific, so it lives outside the core:
+
+- **Android**: build Java/Kotlin in Android Studio into an **`.aar`/`.jar`** under
+  `Assets/Plugins/Android/` (or a package's `Runtime/Plugins/Android/`); the C# `AndroidChannel`
+  calls it over JNI (`AndroidJavaObject`/`AndroidJavaClass`).
+- **iOS**: a `.framework`/`.a` called from C# via `[DllImport]` (P/Invoke).
+
+Consequence: installing the core package via UPM git URL pulls **only the C# framework** — no
+native source. A package *may* bundle native binaries under `Runtime/Plugins/<platform>/`
+(then git install would fetch them); the NativeRelay core deliberately stays pure-C# so it is
+small and engine-portable. A concrete native channel is therefore best shipped as a separate
+integration example (its own Android Studio / Xcode project producing the binary) rather than
+inside this pure-C# core.
