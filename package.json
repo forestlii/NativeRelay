@@ -5,6 +5,9 @@
   "description": "Thread-safe relay for native async callbacks in Unity, dispatched on the main thread, one request <-> one result. Zero-GC seed + pending-table + double-buffer-queue bridge between native worker-thread callbacks and your C# business layer.",
   "unity": "6000.4",
   "license": "MIT",
+  "documentationUrl": "https://github.com/forestlii/NativeRelay/blob/main/README.md",
+  "changelogUrl": "https://github.com/forestlii/NativeRelay/blob/main/CHANGELOG.md",
+  "licensesUrl": "https://github.com/forestlii/NativeRelay/blob/main/LICENSE",
   "keywords": [
     "native",
     "bridge",
