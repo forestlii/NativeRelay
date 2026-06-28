@@ -42,6 +42,8 @@ NativeRelay 把这整条链路标准化 —— *子线程回调 → 安全切回
    ```
    This installs the framework (`Runtime/`) as package `com.likeon.nativerelay`.
    这会把框架（`Runtime/`）作为 `com.likeon.nativerelay` 装进来。
+   To pin a specific release, append a tag, e.g. `…/NativeRelay.git#v0.1.0`.
+   想锁定某个版本，在末尾加 tag，例如 `…/NativeRelay.git#v0.1.0`。
 3. *(optional, to try a demo)* Select **NativeRelay** → **Samples** tab → **Import** a sample.
    *（可选，想跑示例）* 选中 **NativeRelay** → **Samples** 标签 → **Import** 一个示例。
 
@@ -180,11 +182,11 @@ one-request sequence diagram. / 分层图与一次请求的完整时序图见 [d
 
 ## Status · 状态
 
-🚧 Early development (`0.1.0-dev`). The public contract (`INativeChannel`, `Bridge.Request`)
-is frozen; APIs around it may still evolve before `0.1.0`.
+First public release: **`0.1.0`**. The public contract (`INativeChannel`, `Bridge.Request`)
+is frozen; the API around it may still evolve in minor versions before `1.0`.
 
-🚧 早期开发中（`0.1.0-dev`）。公共契约（`INativeChannel`、`Bridge.Request`）已冻结；
-周边 API 在 `0.1.0` 前仍可能调整。
+首个公开版本：**`0.1.0`**。公共契约（`INativeChannel`、`Bridge.Request`）已冻结；
+`1.0` 之前周边 API 在小版本里仍可能演进。
 
 ## Requirements · 环境要求
 
