@@ -45,7 +45,10 @@ namespace Likeon.NativeRelay.Samples
                 minDelayMs: 200, maxDelayMs: 900,
                 resultFactory: (seed, command, payload) =>
                 {
-                    string phrase = FakePhrases[UnityEngine.Random.Range(0, FakePhrases.Length)];
+                    // 注意：resultFactory 在 MockChannel 的【子线程】上执行（模拟原生侧产出结果），
+                    // 这里【绝不能】用 UnityEngine.Random 等只能主线程调的 API，否则会抛异常→结果发不出→超时。
+                    // 改用 seed 确定性选短语：线程安全、零分配、点 Speak 会循环切换短语。
+                    string phrase = FakePhrases[(int)(seed % FakePhrases.Length)];
                     return Encoding.UTF8.GetBytes(phrase); // 模拟"识别出的文本"字节
                 });
             _bridge = MainThreadDispatcher.Instance.CreateBridge(channel, timeoutSeconds: 5.0);
