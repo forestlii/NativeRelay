@@ -23,7 +23,7 @@ asked for it — *one request ↔ one result* — with **zero steady-state GC al
 │                          dispatch by seed + timeout cleanup   │
 │   · MainThreadDispatcher — MonoBehaviour shell, pumps/frame   │
 └───────────────▲───────────────────────────┬─────────────────┘
-                │ OnResult(seed,bytes)[bg]    │ Send(seed,cmd,bytes)
+                │ OnResult(seed,code,data)[bg]│ Send(seed,cmd,payload)
 ┌───────────────┴───────────────────────────▼─────────────────┐
 │  Native abstraction  INativeChannel  (a replaceable impl)    │
 │   · MockChannel    — pure C#, no device/key (default for demo)│
@@ -45,7 +45,7 @@ async result on a background thread is just an `INativeChannel` implementation.
 3. **seed is passed through** to the native side, which returns the result carrying the
    **same seed**.
 4. **background callback → enqueue only** — the native `OnResult` fires on a worker thread
-   and merely pushes `(seed, bytes)` into a thread-safe queue. It never touches Unity APIs.
+   and merely pushes `(seed, code, data)` into a thread-safe queue. It never touches Unity APIs.
 5. **next-frame main-thread dispatch** — a per-frame pump swaps + drains the queue, looks
    up each seed in the pending table, and invokes its callback **on the main thread**.
 6. **no ordering guarantee, only seed correspondence** — whoever comes back first is
@@ -63,7 +63,7 @@ async result on a background thread is just an `INativeChannel` implementation.
   off-Unity).
 - **Timeout cleanup.** If the native side never replies (lost/crashed), the pump
   periodically scans the pending table and removes entries older than `timeout`, invoking
-  a `BridgeError.Timeout` so the business is notified instead of leaking.
+  a `RelayCode.Timeout` so the business is notified instead of leaking.
 
 ## Sequence of one request
 
@@ -89,31 +89,38 @@ Business        Bridge            INativeChannel        worker thread        Mai
    │               │                    │                     │     frame: Pump(now)  │
    │               │   SwapAndDrain ◄───────────────────────────────────────────────-│
    │               │   pending.TryComplete(seed) → ctx        │                       │
-   │ onResult( ◄───│   ctx.OnResult(bytes)  [MAIN THREAD]     │                       │
-   │   bytes)      │   pending.Remove(seed)                   │                       │
-   │ (safe to      │   ScanTimeouts(now) → BridgeError.Timeout│                       │
+   │ onResult( ◄───│   ctx.OnResult(code,data) [MAIN THREAD]  │                       │
+   │  code,data)   │   pending.Remove(seed)                   │                       │
+   │ (safe to      │   ScanTimeouts(now) → RelayCode.Timeout│                       │
    │  touch Unity) │   for anything overdue                   │                       │
 ```
 
-## Public contract (frozen)
+## Public contract (pure-code)
 
 ```csharp
 public interface INativeChannel : IDisposable {
-    void Send(long seed, int command, byte[] payload); // command is int (no string/generic)
-    event Action<long, byte[]> OnResult;               // may fire on a background thread
+    void Send(long seed, int command, string payload);   // command/code are int; payload/data are string
+    event Action<long, int, string> OnResult;            // (seed, code, data) — may fire on a background thread
 }
 
 public sealed class Bridge {
-    long Request(int command, byte[] payload,
-                 Action<byte[]> onResult, Action<BridgeError> onError = null);
+    long Request(int command, string payload, Action<int, string> onResult); // returns seed
     void Pump();      // driven each frame by MainThreadDispatcher
-    void Dispose();   // unsubscribes, fails pending with BridgeError.Disposed, disposes channel
+    void Dispose();   // unsubscribes, fails pending with RelayCode.Disposed, disposes channel
 }
+
+public static class RelayCode { public const int Timeout = int.MinValue; public const int Disposed = int.MinValue + 1; }
 ```
 
-`command` is an `int` on purpose: it crosses threads and the JNI/P-Invoke boundary with
-zero allocation and switches cleanly on the native side. Define your own `enum` in your
-project and cast to `int` at the call site.
+`command`/`code` are `int` (cross threads + the JNI/P-Invoke boundary with zero allocation,
+clean `switch` on the native side); `payload`/`data` are `string` (cover the common
+text/path results; big binary is delivered via a file **path**, not in-memory bytes).
+**The framework never interprets `code` and never touches `data` — it just relays.** It only
+mints a code itself when it can't get a native result: `RelayCode.Timeout` / `RelayCode.Disposed`.
+
+Platform dispatch lives in one place — `NativeChannelFactory.CreateForCurrentPlatform()` selects
+`MockChannel` (Editor/Windows) / `AndroidChannel` (JNI) / `IosChannel` (P/Invoke) via `#if`, behind
+the `INativeChannel` interface.
 
 ## Packaging: where the native layer lives
 

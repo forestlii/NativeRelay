@@ -42,8 +42,8 @@ NativeRelay 把这整条链路标准化 —— *子线程回调 → 安全切回
    ```
    This installs the framework (`Runtime/`) as package `com.likeon.nativerelay`.
    这会把框架（`Runtime/`）作为 `com.likeon.nativerelay` 装进来。
-   To pin a specific release, append a tag, e.g. `…/NativeRelay.git#v0.1.0`.
-   想锁定某个版本，在末尾加 tag，例如 `…/NativeRelay.git#v0.1.0`。
+   To pin a specific release, append a tag, e.g. `…/NativeRelay.git#v0.2.0`.
+   想锁定某个版本，在末尾加 tag，例如 `…/NativeRelay.git#v0.2.0`。
 3. *(optional, to try a demo)* Select **NativeRelay** → **Samples** tab → **Import** a sample.
    *（可选，想跑示例）* 选中 **NativeRelay** → **Samples** 标签 → **Import** 一个示例。
 
@@ -78,25 +78,32 @@ The samples use IMGUI, so they have zero extra dependencies — no scene/prefab 
 ```csharp
 using Likeon.NativeRelay;
 
-// 1) Pick a native channel. MockChannel is pure C# (no device) — swap it for your own later.
-//    选一个原生通道。MockChannel 是纯 C#（无需真机），以后换成你自己的实现。
-var channel = new MockChannel(minDelayMs: 100, maxDelayMs: 800);
+// 1) Pick a native channel for the current platform (Editor/Windows -> Mock, Android -> JNI, iOS -> P/Invoke).
+//    按当前平台选一个原生通道（编辑器/Windows→Mock、Android→JNI、iOS→P/Invoke）。
+INativeChannel channel = NativeChannelFactory.CreateForCurrentPlatform();
 
 // 2) Create a bridge driven each frame by the (auto-created) main-thread dispatcher.
 //    创建一个由（自动生成的）主线程 dispatcher 每帧驱动的桥。
 Bridge bridge = MainThreadDispatcher.Instance.CreateBridge(channel, timeoutSeconds: 5.0);
 
 // 3) Fire a request. onResult is invoked ON THE MAIN THREAD — safe to touch Unity APIs.
-//    发起请求。onResult 在【主线程】被调用 —— 可安全使用 Unity API。
+//    The result is (int code, string data): code is your status (1/0/10086…) or a framework
+//    reserved code (RelayCode.Timeout/Disposed); data is optional text/path.
+//    发起请求。onResult 在【主线程】被调用，可安全用 Unity API。结果是 (int code, string data)：
+//    code 是你的状态码（1/0/10086…）或框架保留码（RelayCode.Timeout/Disposed）；data 是可选文本/路径。
 bridge.Request(
     command: (int)MyCommand.DoSomething,     // your own enum, cast to int / 你自己的枚举，强转 int
-    payload: null,
-    onResult: bytes => { /* main thread: use the result / 主线程：使用结果 */ },
-    onError:  err   => { /* Timeout / ChannelFailure / Disposed */ });
+    payload: null,                           // optional string input / 可选 string 输入
+    onResult: (code, data) =>
+    {
+        if (code == RelayCode.Timeout) { /* timed out / 超时 */ return; }
+        if (code == 1) { /* success: use data (text/path) / 成功：用 data */ }
+        else { /* business error code -> wrap your own message / 业务错误码：自己包文案 */ }
+    });
 
 // when done / 用完时：
-bridge.Dispose(); // fails any pending request with BridgeError.Disposed, disposes the channel
-                  // 给所有未完成请求回调 Disposed，并 Dispose 底层通道
+bridge.Dispose(); // fails any pending request with RelayCode.Disposed, disposes the channel
+                  // 给所有未完成请求回调 Disposed 码，并 Dispose 底层通道
 ```
 
 You define your own command enum and cast to `int` (the core never assumes business
@@ -110,11 +117,12 @@ public enum MyCommand { DoSomething = 1, DoAnother = 2 }
 
 | Type / 类型 | Purpose / 作用 |
 |---|---|
-| `Bridge.Request(int command, byte[] payload, Action<byte[]> onResult, Action<BridgeError> onError = null)` | Fire a request; returns its `seed`. Callbacks run on the main thread. / 发起请求，返回 `seed`；回调在主线程执行。 |
+| `Bridge.Request(int command, string payload, Action<int code, string data> onResult)` | Fire a request; returns its `seed`. `onResult` runs on the main thread. / 发起请求，返回 `seed`；回调在主线程执行。 |
 | `MainThreadDispatcher.Instance.CreateBridge(channel, timeoutSeconds, capacity)` | Create a bridge pumped every frame. / 创建每帧被驱动的桥。 |
-| `INativeChannel` | The native seam: `Send(long seed, int command, byte[] payload)` + `event Action<long, byte[]> OnResult` (may fire off-thread) + `Dispose()`. / 原生层接缝。 |
-| `MockChannel` | Pure-C# channel replying on a background thread after a random delay. / 纯 C# 通道，子线程随机延迟后回结果。 |
-| `BridgeError` | `Timeout` / `ChannelFailure` / `Disposed`, carrying the failing `seed`. / 失败类别，带出错 seed。 |
+| `NativeChannelFactory.CreateForCurrentPlatform()` | Pick the right `INativeChannel` per platform (the one place with `#if`). / 按平台挑通道（唯一 `#if` 处）。 |
+| `INativeChannel` | The native seam: `Send(long seed, int command, string payload)` + `event Action<long, int, string> OnResult` (may fire off-thread) + `Dispose()`. / 原生层接缝。 |
+| `MockChannel` | Pure-C# channel replying `(code, data)` on a background thread after a random delay. / 纯 C# 通道。 |
+| `RelayCode` | Framework-reserved result codes: `Timeout` / `Disposed`. Business codes (1/0/10086…) are yours. / 框架保留码；业务码自定义。 |
 
 `command` is an `int` on purpose — it crosses threads and the JNI/P-Invoke boundary with
 zero allocation and switches cleanly on the native side. (No `string`, no generics — those
@@ -123,38 +131,25 @@ allocate or box and would break the zero-GC guarantee.)
 `command` 刻意用 `int` —— 它跨线程、跨 JNI/P-Invoke 边界都零分配，原生侧 `switch(int)` 干净分发。
 （不用 `string`、不用泛型——那会分配或装箱，破坏零 GC 保证。）
 
-## Plugging in a real native channel · 接入真实原生通道
+## Platform dispatch & native channels · 平台分发与原生通道
 
-The plugin core doesn't care what the native side does — implement `INativeChannel`:
-插件核心完全不关心原生侧具体做什么 —— 实现 `INativeChannel` 即可：
+`NativeChannelFactory.CreateForCurrentPlatform()` picks the right channel per platform — the
+**one place** that uses `#if` (Editor/Windows → `MockChannel`, Android → `AndroidChannel`/JNI,
+iOS → `IosChannel`/P-Invoke), behind the clean `INativeChannel` interface.
 
-```csharp
-public sealed class AndroidChannel : INativeChannel
-{
-    public event Action<long, byte[]> OnResult;
+`NativeChannelFactory.CreateForCurrentPlatform()` 按平台挑通道——**唯一**用 `#if` 的地方
+（编辑器/Windows→`MockChannel`、Android→`AndroidChannel`(JNI)、iOS→`IosChannel`(P/Invoke)），藏在
+干净的 `INativeChannel` 接口后面。
 
-    public void Send(long seed, int command, byte[] payload)
-    {
-        // Call into Java/JNI; pass the seed across so the native side can return it.
-        // 调入 Java/JNI；把 seed 传过去，让原生侧带着它回结果。
-    }
+The package ships the C# side of `AndroidChannel` (JNI) and `IosChannel` (P/Invoke + `GCHandle`).
+You provide the matching native binary implementing the documented contract — Android: build an
+`.aar` (see [docs/native-android.md](docs/native-android.md)); iOS: a static lib exposing the C
+ABI (see [docs/native-ios.md](docs/native-ios.md)). To write your own channel, just implement
+`INativeChannel` (`Send(long seed, int command, string payload)` + `event Action<long,int,string> OnResult` + `Dispose`).
 
-    // When the native worker thread finishes, raise OnResult(seed, resultBytes).
-    // It is fine to raise this on a background thread — NativeRelay relays it to the main thread.
-    // 原生子线程完成后触发 OnResult(seed, resultBytes)；在子线程触发也没关系，NativeRelay 会切回主线程。
-
-    public void Dispose() { /* release native resources / 释放原生资源 */ }
-}
-```
-
-On the native side, switch on the `int command` and, when work completes, call back with
-the **same seed** and the result bytes. Then just `CreateBridge(new AndroidChannel())` and
-the rest of your code is unchanged. The same shape applies to iOS (Objective-C/Swift via
-P-Invoke), BLE, location, or any SDK.
-
-原生侧按 `int command` 分发，完成后用**同一个 seed** + 结果字节回调。然后只需
-`CreateBridge(new AndroidChannel())`，其余代码不变。iOS（Objective-C/Swift 经 P-Invoke）、
-蓝牙、定位或任意 SDK 都是同样的写法。
+包内含 `AndroidChannel`(JNI) 与 `IosChannel`(P/Invoke + `GCHandle`) 的 **C# 侧**；你提供配套原生库
+（Android 打 `.aar`，见 [docs/native-android.md](docs/native-android.md)；iOS 暴露 C ABI 的静态库，见
+[docs/native-ios.md](docs/native-ios.md)）。想自己写通道，实现 `INativeChannel` 即可。
 
 ### Where the native code lives · 原生代码在哪、怎么打包
 
@@ -213,11 +208,11 @@ one-request sequence diagram. / 分层图与一次请求的完整时序图见 [d
 
 ## Status · 状态
 
-First public release: **`0.1.0`**. The public contract (`INativeChannel`, `Bridge.Request`)
-is frozen; the API around it may still evolve in minor versions before `1.0`.
+Current version: **`0.2.0`**. The pure-code contract (`Request(int, string, Action<int,string>)`,
+results as `(code, data)`) is settled; the API may still evolve in minor versions before `1.0`.
 
-首个公开版本：**`0.1.0`**。公共契约（`INativeChannel`、`Bridge.Request`）已冻结；
-`1.0` 之前周边 API 在小版本里仍可能演进。
+当前版本：**`0.2.0`**。纯码契约（`Request(int, string, Action<int,string>)`、结果 `(code, data)`）已定型；
+`1.0` 之前小版本仍可能演进。
 
 ## Requirements · 环境要求
 

@@ -5,8 +5,18 @@ All notable changes to NativeRelay are documented here. Format loosely follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-29
+
+### Changed (breaking)
+- **Pure-code string contract.** `Bridge.Request(int command, string payload, Action<int code, string data> onResult)` — a single result callback delivering `(int code, string data)`. `INativeChannel` is now `Send(long seed, int command, string payload)` + `event Action<long, int, string> OnResult`. The framework never interprets `code` and never touches `data` — it just relays.
+- **Removed `BridgeError` / `onError`.** Errors are codes: business defines `1`/`0`/`10086`/…; the framework only mints `RelayCode.Timeout` (`int.MinValue`) / `RelayCode.Disposed` (`int.MinValue+1`) when it can't get a native result. A failing `channel.Send` now rethrows to the caller (framework doesn't swallow errors).
+
 ### Added
-- `AndroidChannel` — the C# side of a generic Android (JNI) relay channel template (passes `seed`/`command`/`payload` to Java and receives results back via a callback proxy). Compile-verified; the companion Java `.aar` and on-device verification are pending (see `docs/native-android.md` for the Java contract and build steps).
+- `NativeChannelFactory.CreateForCurrentPlatform()` — platform dispatch in one place via `#if` (Editor/Windows → `MockChannel`, Android → `AndroidChannel`/JNI, iOS → `IosChannel`/P-Invoke), behind the `INativeChannel` interface.
+- `AndroidChannel` (JNI) and `IosChannel` (P/Invoke + `GCHandle` + `[MonoPInvokeCallback]`) — the C# side of generic native relay templates. Compile-verified; the matching `.aar`/native lib + on-device verification are pending (see `docs/native-android.md`, `docs/native-ios.md`).
+
+### Verified
+- dotnet fast loop: 38 tests green. Unity 6: compile clean, EditMode 35/35, PlayMode 3/3 (main-thread dispatch, end-to-end timeout, 1000-request stress, steady-state zero-GC for success + timeout paths).
 
 ## [0.1.0] - 2026-06-29
 

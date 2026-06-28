@@ -1,6 +1,6 @@
 {
   "name": "com.likeon.nativerelay",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "displayName": "NativeRelay",
   "description": "Thread-safe relay for native async callbacks in Unity, dispatched on the main thread, one request <-> one result. Zero-GC seed + pending-table + double-buffer-queue bridge between native worker-thread callbacks and your C# business layer.",
   "unity": "6000.4",
