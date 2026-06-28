@@ -114,5 +114,45 @@ namespace NativeRelay.Tests
             foreach (var s in successSeeds) Assert.That(s % 2, Is.EqualTo(1L), $"成功的 seed {s} 应为奇数（未丢弃）");
             foreach (var s in timeoutSeeds) Assert.That(s % 2, Is.EqualTo(0L), $"超时的 seed {s} 应为偶数（被丢弃）");
         }
+
+        [Test]
+        public void Stress_1000Requests_SubThreadFlood_MainConsume_NoLossNoDup()
+        {
+            const int n = 1000;
+            var sw = Stopwatch.StartNew();
+            // 小延迟 → 大量子线程回调几乎同时涌入（狂塞），主线程边 Pump 边消费。
+            using var ch = new MockChannel(minDelayMs: 0, maxDelayMs: 3);
+            var bridge = new Bridge(ch, () => sw.Elapsed.TotalSeconds, timeoutSeconds: 60, capacity: 256);
+
+            int dispatched = 0;
+            int misrouted = 0;
+            var seen = new HashSet<long>();
+
+            for (int i = 1; i <= n; i++)
+            {
+                long captured = 0;
+                captured = bridge.Request(1, null,
+                    payload =>
+                    {
+                        if (DecodeSeed(payload) != captured) misrouted++;
+                        if (!seen.Add(captured)) misrouted++; // 重复派发
+                        dispatched++;
+                    },
+                    _ => { });
+            }
+
+            var deadline = sw.Elapsed + TimeSpan.FromSeconds(20);
+            while (bridge.PendingCount > 0 && sw.Elapsed < deadline)
+            {
+                bridge.Pump();
+                Thread.Sleep(1);
+            }
+            bridge.Pump();
+
+            Assert.That(misrouted, Is.EqualTo(0), "满载下仍 seed↔payload 一一对应、无重复派发");
+            Assert.That(dispatched, Is.EqualTo(n), "守恒：派发数 == 请求数（无丢失）");
+            Assert.That(seen.Count, Is.EqualTo(n));
+            Assert.That(bridge.PendingCount, Is.EqualTo(0), "pending 全部排干");
+        }
     }
 }
