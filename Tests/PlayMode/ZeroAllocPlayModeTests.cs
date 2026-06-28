@@ -45,5 +45,31 @@ namespace NativeRelay.Tests.PlayMode
                 pump.Pump(0);
             }, Is.Not.AllocatingGCMemory());
         }
+
+        [Test]
+        public void RelayPump_SteadyTimeoutPath_DoesNotAllocateGC()
+        {
+            var pump = new RelayPump(timeoutSeconds: 1.0, capacity: 256);
+            Action<byte[]> onResult = _ => { };
+            Action<BridgeError> onError = _ => { };
+            long seed = 0;
+            double t = 0;
+
+            // warmup：撑大容量；每轮登记一批（不喂结果），Pump 时已越过 timeout → 全部走超时清理
+            for (int r = 0; r < 8; r++)
+            {
+                for (int i = 0; i < 128; i++) pump.Register(++seed, onResult, onError, t);
+                t += 10;
+                pump.Pump(t);
+            }
+
+            // 稳态超时清理：BridgeError 是值类型、扫描用字典结构体枚举器 → 应零 GC
+            Assert.That(() =>
+            {
+                for (int i = 0; i < 64; i++) pump.Register(++seed, onResult, onError, t);
+                t += 10;
+                pump.Pump(t);
+            }, Is.Not.AllocatingGCMemory());
+        }
     }
 }
