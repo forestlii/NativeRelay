@@ -21,13 +21,34 @@ the moment you clone it** (a pure-C# mock channel — no device, no key, no netw
 
 ## Install
 
-Unity Package Manager → **Add package from git URL**:
+**Recommended — via Unity Package Manager (git URL):**
 
-```
-https://github.com/forestlii/NativeRelay.git
-```
+1. Open your Unity 6 project → menu **Window → Package Manager**.
+2. Top-left **`+` → Add package from git URL…**, paste and **Add**:
+   ```
+   https://github.com/forestlii/NativeRelay.git
+   ```
+   This installs the framework (`Runtime/`) as package `com.likeon.nativerelay`.
+3. *(optional, to try a demo)* Select **NativeRelay** in Package Manager → **Samples** tab →
+   click **Import** on a sample. It copies the sample into
+   `Assets/Samples/NativeRelay/<version>/…`.
 
-Requires **Unity 6 (6000.4)+**. Package id: `com.likeon.nativerelay`.
+Requires **Unity 6 (6000.4)+**.
+
+> **Updating** a git-URL package: Unity caches the resolved commit. To pull a newer version,
+> remove the package and re-add the git URL (or bump its entry in `Packages/packages-lock.json`).
+> If you iterate on the package a lot, prefer **Add package from disk** pointing at a local
+> clone's `package.json` — Unity then picks up your edits automatically.
+
+### Try a sample in 1 minute
+
+1. Install via the git URL (above), then **Samples → Import "Basic Mock Demo"**.
+2. Create an empty scene → add an empty **GameObject**.
+3. **Add Component** → search **`BasicMockDemo`** → attach it.
+4. Press **Play**, click **Send**, and watch concurrent requests come back *out of order*
+   and get dispatched on the **main thread** (the log shows send-frame → return-frame per seed).
+
+The samples use IMGUI, so they have zero extra dependencies — no scene/prefab setup needed.
 
 ## 30-second quick start
 
