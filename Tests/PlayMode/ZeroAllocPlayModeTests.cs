@@ -8,68 +8,46 @@ using Is = UnityEngine.TestTools.Constraints.Is;
 
 namespace Likeon.NativeRelay.Tests.PlayMode
 {
-    // PlayMode 零 GC 佐证（Unity 运行时侧）：稳态成功路径 Register+Enqueue+Pump 不产生 GC 分配。
-    // 逻辑正确性已由 dotnet/EditMode 覆盖；这里专测 Unity 运行时下的零 GC 硬指标。
+    // PlayMode 零 GC 佐证（Unity 运行时侧）：稳态成功/超时路径不产生 GC 分配。
+    // 关键：用<b>同一个</b>委托先 warmup 再测——Mono 的 Is.Not.AllocatingGCMemory 单次测量对首次 JIT/容量增长敏感，
+    // 先把它跑热（撑大字典/列表容量 + JIT），再断言这同一个委托稳态零分配。
     public sealed class ZeroAllocPlayModeTests
     {
         [Test]
         public void RelayPump_SteadySuccessPath_DoesNotAllocateGC()
         {
-            var pump = new RelayPump(timeoutSeconds: 1000, capacity: 256);
-            Action<byte[]> onResult = _ => { };
-            Action<BridgeError> onError = _ => { };
-            byte[] payload = new byte[8];
+            var pump = new RelayPump(timeoutSeconds: 1000, capacity: 512);
+            Action<int, string> onResult = (c, d) => { };
+            const string data = "x";
             long seed = 0;
 
-            // warmup：撑大字典/列表容量到稳态，避免扩容分配混入测量
-            for (int r = 0; r < 8; r++)
+            TestDelegate body = () =>
             {
-                for (int i = 0; i < 128; i++)
-                {
-                    seed++;
-                    pump.Register(seed, onResult, onError, 0);
-                    pump.Enqueue(seed, payload);
-                }
+                for (int i = 0; i < 64; i++) { seed++; pump.Register(seed, onResult, 0); pump.Enqueue(seed, 1, data); }
                 pump.Pump(0);
-            }
+            };
 
-            // 稳态一轮：Register + Enqueue + Pump 成功派发，必须零 GC 分配。
-            Assert.That(() =>
-            {
-                for (int i = 0; i < 64; i++)
-                {
-                    seed++;
-                    pump.Register(seed, onResult, onError, 0);
-                    pump.Enqueue(seed, payload);
-                }
-                pump.Pump(0);
-            }, Is.Not.AllocatingGCMemory());
+            for (int r = 0; r < 16; r++) body(); // warmup 同一委托：撑容量 + JIT
+            Assert.That(body, Is.Not.AllocatingGCMemory());
         }
 
         [Test]
         public void RelayPump_SteadyTimeoutPath_DoesNotAllocateGC()
         {
-            var pump = new RelayPump(timeoutSeconds: 1.0, capacity: 256);
-            Action<byte[]> onResult = _ => { };
-            Action<BridgeError> onError = _ => { };
+            var pump = new RelayPump(timeoutSeconds: 1.0, capacity: 512);
+            Action<int, string> onResult = (c, d) => { };
             long seed = 0;
             double t = 0;
 
-            // warmup：撑大容量；每轮登记一批（不喂结果），Pump 时已越过 timeout → 全部走超时清理
-            for (int r = 0; r < 8; r++)
+            TestDelegate body = () =>
             {
-                for (int i = 0; i < 128; i++) pump.Register(++seed, onResult, onError, t);
+                for (int i = 0; i < 64; i++) pump.Register(++seed, onResult, t);
                 t += 10;
-                pump.Pump(t);
-            }
+                pump.Pump(t); // 全部过期
+            };
 
-            // 稳态超时清理：BridgeError 是值类型、扫描用字典结构体枚举器 → 应零 GC
-            Assert.That(() =>
-            {
-                for (int i = 0; i < 64; i++) pump.Register(++seed, onResult, onError, t);
-                t += 10;
-                pump.Pump(t);
-            }, Is.Not.AllocatingGCMemory());
+            for (int r = 0; r < 16; r++) body();
+            Assert.That(body, Is.Not.AllocatingGCMemory());
         }
     }
 }

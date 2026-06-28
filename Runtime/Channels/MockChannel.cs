@@ -19,12 +19,12 @@ namespace Likeon.NativeRelay
     /// </remarks>
     public sealed class MockChannel : INativeChannel
     {
-        /// <summary>原生层 → 框架层：结果回来（在子线程触发）。</summary>
-        public event Action<long, byte[]> OnResult;
+        /// <summary>原生层 → 框架层：结果 (seed, code, data) 回来（在子线程触发）。</summary>
+        public event Action<long, int, string> OnResult;
 
         private readonly int _minDelayMs;
         private readonly int _maxDelayMs;
-        private readonly Func<long, int, byte[], byte[]> _resultFactory;
+        private readonly Func<long, int, string, (int code, string data)> _resultFactory;
         private readonly Func<long, bool> _shouldDrop;
         private readonly Random _rng;
         private readonly object _rngLock = new object();
@@ -32,14 +32,14 @@ namespace Likeon.NativeRelay
 
         /// <param name="minDelayMs">模拟回调最小延迟（默认 50ms）。</param>
         /// <param name="maxDelayMs">模拟回调最大延迟（默认 500ms）。</param>
-        /// <param name="resultFactory">结果字节工厂 (seed, command, payload) → resultBytes；默认回显 seed。</param>
+        /// <param name="resultFactory">结果工厂 (seed, command, payload) → (code, data)；默认 (1, 回显 seed 字符串)。</param>
         /// <param name="shouldDrop">可选：返回 true 的 seed 将<b>永不回 OnResult</b>（模拟原生层丢结果/崩溃），
         /// 用于测试桥的超时清理。默认 null = 都会回。</param>
         /// <param name="seed">随机种子；默认随机。</param>
         public MockChannel(
             int minDelayMs = 50,
             int maxDelayMs = 500,
-            Func<long, int, byte[], byte[]> resultFactory = null,
+            Func<long, int, string, (int code, string data)> resultFactory = null,
             Func<long, bool> shouldDrop = null,
             int? seed = null)
         {
@@ -52,13 +52,13 @@ namespace Likeon.NativeRelay
             _rng = seed.HasValue ? new Random(seed.Value) : new Random();
         }
 
-        private static byte[] DefaultResult(long seed, int command, byte[] payload)
+        private static (int code, string data) DefaultResult(long seed, int command, string payload)
         {
-            return BitConverter.GetBytes(seed); // 回显 seed（小端 8 字节）
+            return (1, seed.ToString()); // 默认 code=1(成功) + data=回显 seed 的字符串
         }
 
         /// <inheritdoc />
-        public void Send(long seed, int command, byte[] payload)
+        public void Send(long seed, int command, string payload)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(MockChannel));
 
@@ -84,8 +84,8 @@ namespace Likeon.NativeRelay
                 var handler = OnResult; // 本地快照，避免竞态下被置空
                 if (handler == null) return;
 
-                byte[] result = _resultFactory(seed, command, payload);
-                handler(seed, result);
+                var (code, data) = _resultFactory(seed, command, payload);
+                handler(seed, code, data);
             });
         }
 

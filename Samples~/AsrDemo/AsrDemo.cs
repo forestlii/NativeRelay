@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using Likeon.NativeRelay;
 using UnityEngine;
@@ -42,12 +40,12 @@ namespace Likeon.NativeRelay.Samples
         {
             _mainThreadId = Thread.CurrentThread.ManagedThreadId;
 
-            // 通道：MockChannel 把请求的 payload（你"说"的文本）当"识别结果"原样回传，模拟语音→文本回流。
-            // 注意 resultFactory 在子线程执行：只能做线程安全、不碰 Unity API 的事（这里仅回传 payload 字节）。
+            // 通道：MockChannel 把请求的 payload（你"说"的文本）当"识别结果"原样回传(code=1)，模拟语音→文本回流。
+            // 纯码契约下 payload/data 都是 string，不用编解码。resultFactory 在子线程执行，但只读字符串、线程安全。
             var channel = new MockChannel(
                 minDelayMs: 200, maxDelayMs: 900,
                 resultFactory: (seed, command, payload) =>
-                    (payload != null && payload.Length > 0) ? payload : Encoding.UTF8.GetBytes("（没说话）"));
+                    (1, string.IsNullOrEmpty(payload) ? "（没说话）" : payload));
             _bridge = MainThreadDispatcher.Instance.CreateBridge(channel, timeoutSeconds: 5.0);
 
             AppendLine("（在输入框打一句话，或点下面的快捷短语，再点 Speak —— 识别结果会在随后某帧回到主线程驱动 NPC）");
@@ -63,19 +61,15 @@ namespace Likeon.NativeRelay.Samples
 
             _bridge.Request(
                 command: (int)AsrDemoCommand.Recognize,
-                payload: Encoding.UTF8.GetBytes(text),
-                onResult: result =>
+                payload: text,                       // 你说的话直接作为 string payload 走桥
+                onResult: (code, data) =>
                 {
                     _waiting = false;
+                    if (code == RelayCode.Timeout) { AppendLine("⚠ 识别超时"); return; }
                     bool onMain = Thread.CurrentThread.ManagedThreadId == _mainThreadId;
-                    string recognized = Encoding.UTF8.GetString(result);
+                    string recognized = data;        // data 就是识别文本
                     AppendLine($"🗣 识别结果（主线程={onMain}）：{recognized}");
                     AppendLine($"🤖 NPC：{Reply(recognized)}");
-                },
-                onError: err =>
-                {
-                    _waiting = false;
-                    AppendLine($"⚠ 识别失败：{err.Kind}");
                 });
         }
 

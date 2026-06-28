@@ -24,13 +24,15 @@ namespace Likeon.NativeRelay
         /// </summary>
         /// <param name="seed">本次请求的唯一序号；原生层处理完必须带着<b>同一个 seed</b> 回调结果，用于一一对应。</param>
         /// <param name="command">行为标识（int）。具体取值由使用者定义，原生侧据此分发。</param>
-        /// <param name="payload">请求参数字节，可为 null。</param>
-        void Send(long seed, int command, byte[] payload);
+        /// <param name="payload">请求参数字符串（参数/路径/url 等），可为 null。</param>
+        void Send(long seed, int command, string payload);
 
         /// <summary>
         /// 原生层 → 框架层：一次请求的结果回来了。<b>注意：此事件可能在子线程触发。</b>
-        /// 参数为 (seed, resultBytes)；seed 必须与对应 <see cref="Send"/> 的 seed 相同。
+        /// 参数为 <c>(seed, code, data)</c>：seed 必须与对应 <see cref="Send"/> 的 seed 相同；
+        /// <c>code</c> 是结果码（业务自定义，如 1=成功/0=失败/10086=具体错误，框架不解释）；
+        /// <c>data</c> 是可选数据字符串（成功时如文本/路径，失败可为空）。
         /// </summary>
-        event Action<long, byte[]> OnResult;
+        event Action<long, int, string> OnResult;
     }
 }

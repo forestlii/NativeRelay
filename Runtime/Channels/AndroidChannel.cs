@@ -24,8 +24,8 @@ namespace Likeon.NativeRelay
         /// <summary>默认对接的 Java 类全名（见 docs/native-android.md 的契约）。</summary>
         public const string DefaultJavaClass = "com.likeon.nativerelay.NativeRelayChannel";
 
-        /// <summary>结果回来（可能在 Java 子线程触发）。</summary>
-        public event Action<long, byte[]> OnResult;
+        /// <summary>结果 (seed, code, data) 回来（可能在 Java 子线程触发）。</summary>
+        public event Action<long, int, string> OnResult;
 
         private AndroidJavaObject _java;
         private ResultProxy _proxy;
@@ -41,17 +41,17 @@ namespace Likeon.NativeRelay
         }
 
         /// <inheritdoc />
-        public void Send(long seed, int command, byte[] payload)
+        public void Send(long seed, int command, string payload)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(AndroidChannel));
-            // 对应 Java: void send(long seed, int command, byte[] payload)
+            // 对应 Java: void send(long seed, int command, String payload)
             _java.Call("send", seed, command, payload);
         }
 
         // 由回调代理在 Java 子线程上调用；这里只把事件抛出去，桥负责切回主线程。
-        private void RaiseResult(long seed, byte[] result)
+        private void RaiseResult(long seed, int code, string data)
         {
-            OnResult?.Invoke(seed, result);
+            OnResult?.Invoke(seed, code, data);
         }
 
         /// <summary>关闭通道：通知 Java 释放并销毁 Java 对象。</summary>
@@ -71,8 +71,8 @@ namespace Likeon.NativeRelay
 
         /// <summary>
         /// 实现 Java 回调接口 <c>com.likeon.nativerelay.NativeRelayChannel$ResultCallback</c>
-        /// （<c>void onResult(long seed, byte[] result)</c>）的代理。用 <see cref="Invoke(string, AndroidJavaObject[])"/>
-        /// 重载手动取参，以可靠处理 <c>byte[]</c> 数组的编组。
+        /// （<c>void onResult(long seed, int code, String data)</c>）的代理。用 <see cref="Invoke(string, AndroidJavaObject[])"/>
+        /// 重载手动取参。
         /// </summary>
         private sealed class ResultProxy : AndroidJavaProxy
         {
@@ -86,11 +86,12 @@ namespace Likeon.NativeRelay
 
             public override AndroidJavaObject Invoke(string methodName, AndroidJavaObject[] javaArgs)
             {
-                if (methodName == "onResult" && javaArgs != null && javaArgs.Length == 2)
+                if (methodName == "onResult" && javaArgs != null && javaArgs.Length == 3)
                 {
-                    long seed = javaArgs[0].Call<long>("longValue");        // 装箱的 java.lang.Long
-                    byte[] result = AndroidJNIHelper.ConvertFromJNIArray<byte[]>(javaArgs[1].GetRawObject());
-                    _owner.RaiseResult(seed, result);
+                    long seed = javaArgs[0].Call<long>("longValue");   // 装箱的 java.lang.Long
+                    int code = javaArgs[1].Call<int>("intValue");     // 装箱的 java.lang.Integer
+                    string data = javaArgs[2] != null ? javaArgs[2].Call<string>("toString") : null; // java.lang.String
+                    _owner.RaiseResult(seed, code, data);
                     return null;
                 }
                 return base.Invoke(methodName, javaArgs);

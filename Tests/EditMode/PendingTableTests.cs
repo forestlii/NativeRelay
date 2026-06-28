@@ -9,7 +9,7 @@ namespace Likeon.NativeRelay.Tests
     {
         private static PendingContext Ctx(double start)
         {
-            return new PendingContext(_ => { }, _ => { }, start);
+            return new PendingContext((code, data) => { }, start);
         }
 
         [Test]

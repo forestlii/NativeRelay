@@ -4,24 +4,23 @@ using System.Collections.Generic;
 namespace Likeon.NativeRelay
 {
     /// <summary>
-    /// 一次未完成请求的上下文：成功回调 + 失败回调 + 发起时间戳。
+    /// 一次未完成请求的上下文：<b>单一结果回调</b>(code, data) + 发起时间戳。
     /// <b>readonly struct</b>，在 <see cref="Dictionary{TKey,TValue}"/> 里内联存储，避免每次请求为上下文额外堆分配。
     /// </summary>
     public readonly struct PendingContext
     {
-        /// <summary>结果回来时在主线程调用（参数为原生回传的字节）。</summary>
-        public readonly Action<byte[]> OnResult;
-
-        /// <summary>请求失败（超时 / 通道失败 / 关闭）时在主线程调用；可为 null。</summary>
-        public readonly Action<BridgeError> OnError;
+        /// <summary>
+        /// 结果回来时在主线程调用：<c>code</c> = 结果码（业务自定义，或框架保留码 <see cref="RelayCode"/>），
+        /// <c>data</c> = 可选数据字符串（成功时如文本/路径，失败/超时可为空）。框架不解释 code、不碰 data。
+        /// </summary>
+        public readonly Action<int, string> OnResult;
 
         /// <summary>发起请求时的时间戳（秒）；用于超时扫描。</summary>
         public readonly double StartTime;
 
-        public PendingContext(Action<byte[]> onResult, Action<BridgeError> onError, double startTime)
+        public PendingContext(Action<int, string> onResult, double startTime)
         {
             OnResult = onResult;
-            OnError = onError;
             StartTime = startTime;
         }
     }

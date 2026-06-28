@@ -6,30 +6,21 @@ using NUnit.Framework;
 
 namespace Likeon.NativeRelay.Tests
 {
-    // MockChannel 同时是 INativeChannel 契约的测试载体（接口本身无行为）。
-    // 用小延迟（1~10ms）+ CountdownEvent 等待，保证测试快且稳；验证「子线程乱序回来仍 seed↔payload 一一对应」。
+    // MockChannel 同时是 INativeChannel 契约的测试载体。默认结果 = (code=1, data=seed 的字符串)。
     public sealed class MockChannelTests
     {
-        // 默认结果工厂把 seed 编码进字节，便于解码校验是否错配。
-        private static long DecodeSeed(byte[] bytes)
-        {
-            return BitConverter.ToInt64(bytes, 0);
-        }
-
         [Test]
         public void Send_FiresOnResultOnce_WithSameSeed_OnBackgroundThread()
         {
             using var ch = new MockChannel(minDelayMs: 1, maxDelayMs: 5);
-            long gotSeed = -1;
-            byte[] gotPayload = null;
+            long gotSeed = -1; int gotCode = 0; string gotData = null;
             int mainThreadId = Thread.CurrentThread.ManagedThreadId;
             int callbackThreadId = mainThreadId;
             var done = new CountdownEvent(1);
 
-            ch.OnResult += (seed, payload) =>
+            ch.OnResult += (seed, code, data) =>
             {
-                gotSeed = seed;
-                gotPayload = payload;
+                gotSeed = seed; gotCode = code; gotData = data;
                 callbackThreadId = Thread.CurrentThread.ManagedThreadId;
                 done.Signal();
             };
@@ -37,8 +28,9 @@ namespace Likeon.NativeRelay.Tests
             ch.Send(seed: 77, command: 1, payload: null);
             Assert.That(done.Wait(TimeSpan.FromSeconds(5)), Is.True, "应在超时内回调一次");
             Assert.That(gotSeed, Is.EqualTo(77L));
-            Assert.That(DecodeSeed(gotPayload), Is.EqualTo(77L), "结果字节应回显 seed");
-            Assert.That(callbackThreadId, Is.Not.EqualTo(mainThreadId), "回调必须发生在子线程（呼应跨线程场景）");
+            Assert.That(gotCode, Is.EqualTo(1));
+            Assert.That(gotData, Is.EqualTo("77"), "默认 data = seed 字符串");
+            Assert.That(callbackThreadId, Is.Not.EqualTo(mainThreadId), "回调必须在子线程");
         }
 
         [Test]
@@ -48,24 +40,39 @@ namespace Likeon.NativeRelay.Tests
             using var ch = new MockChannel(minDelayMs: 1, maxDelayMs: 10);
 
             var received = new ConcurrentDictionary<long, int>();
-            bool misrouted = false;
+            int misrouted = 0;
             var done = new CountdownEvent(n);
 
-            ch.OnResult += (seed, payload) =>
+            ch.OnResult += (seed, code, data) =>
             {
-                // 错配检测：payload 解出的 seed 必须等于回调带回的 seed
-                if (DecodeSeed(payload) != seed) Volatile.Write(ref misrouted, true);
+                if (data != seed.ToString()) Interlocked.Increment(ref misrouted); // data 应回显本 seed
                 received.AddOrUpdate(seed, 1, (_, c) => c + 1);
                 done.Signal();
             };
 
             for (int i = 1; i <= n; i++) ch.Send(seed: i, command: 1, payload: null);
 
-            Assert.That(done.Wait(TimeSpan.FromSeconds(10)), Is.True, "全部回调应在超时内到齐");
-            Assert.That(misrouted, Is.False, "payload 内 seed 必须与回调 seed 一致，零错配");
-            Assert.That(received.Count, Is.EqualTo(n), "每个 seed 恰好收到一次");
+            Assert.That(done.Wait(TimeSpan.FromSeconds(10)), Is.True);
+            Assert.That(misrouted, Is.EqualTo(0), "data 内 seed 必须与回调 seed 一致");
+            Assert.That(received.Count, Is.EqualTo(n));
             foreach (var kv in received)
-                Assert.That(kv.Value, Is.EqualTo(1), $"seed {kv.Key} 被回调了 {kv.Value} 次（应为 1）");
+                Assert.That(kv.Value, Is.EqualTo(1), $"seed {kv.Key} 被回调 {kv.Value} 次（应为 1）");
+        }
+
+        [Test]
+        public void CustomResultFactory_ReturnsCodeAndData()
+        {
+            using var ch = new MockChannel(
+                minDelayMs: 1, maxDelayMs: 3,
+                resultFactory: (seed, command, payload) => (10086, "boom"));
+            int gotCode = 0; string gotData = null;
+            var done = new CountdownEvent(1);
+            ch.OnResult += (seed, code, data) => { gotCode = code; gotData = data; done.Signal(); };
+
+            ch.Send(1, 1, null);
+            Assert.That(done.Wait(TimeSpan.FromSeconds(5)), Is.True);
+            Assert.That(gotCode, Is.EqualTo(10086));
+            Assert.That(gotData, Is.EqualTo("boom"));
         }
 
         [Test]
@@ -73,13 +80,13 @@ namespace Likeon.NativeRelay.Tests
         {
             var ch = new MockChannel(minDelayMs: 50, maxDelayMs: 80);
             int fired = 0;
-            ch.OnResult += (_, __) => Interlocked.Increment(ref fired);
+            ch.OnResult += (_, __, ___) => Interlocked.Increment(ref fired);
 
             ch.Send(1, 1, null);
-            ch.Dispose(); // 在结果回来前 dispose
-            Thread.Sleep(200); // 等过原本的延迟窗口
+            ch.Dispose();
+            Thread.Sleep(200);
 
-            Assert.That(Volatile.Read(ref fired), Is.EqualTo(0), "Dispose 后不应再派发结果");
+            Assert.That(Volatile.Read(ref fired), Is.EqualTo(0), "Dispose 后不应再派发");
         }
     }
 }

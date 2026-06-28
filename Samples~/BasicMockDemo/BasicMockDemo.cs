@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Threading;
 using Likeon.NativeRelay;
@@ -13,8 +12,8 @@ namespace Likeon.NativeRelay.Samples
     /// <para>用法：把本组件挂到空场景里的一个空 GameObject 上，按 Play，点按钮即可。无需真机/key/联网。</para>
     /// </summary>
     /// <remarks>
-    /// 看点：业务侧只调 <see cref="Bridge.Request(int, byte[], System.Action{byte[]}, System.Action{BridgeError})"/>，
-    /// 拿到的 onResult 一定在主线程（可安全碰 Unity API）。
+    /// 看点：业务侧只调 <see cref="Bridge.Request(int, string, System.Action{int, string})"/>，
+    /// 拿到的 onResult <c>(code, data)</c> 一定在主线程（可安全碰 Unity API）。
     /// UI 用 IMGUI（<see cref="OnGUI"/>）以保持<b>零额外依赖</b>（不需要 com.unity.ugui），任何工程都能直接跑。
     /// </remarks>
     public sealed class BasicMockDemo : MonoBehaviour
@@ -53,13 +52,13 @@ namespace Likeon.NativeRelay.Samples
                 long seed = _bridge.Request(
                     command: (int)DemoCommand.Ping,
                     payload: null,
-                    onResult: result =>
+                    onResult: (code, data) =>
                     {
                         bool onMain = Thread.CurrentThread.ManagedThreadId == _mainThreadId;
-                        long echoed = BitConverter.ToInt64(result, 0);
-                        AppendLog($"#{echoed}  发出帧 {sentFrame} → 返回帧 {Time.frameCount}  主线程={onMain}");
-                    },
-                    onError: err => AppendLog($"#{err.Seed}  失败：{err.Kind}"));
+                        if (code == RelayCode.Timeout) { AppendLog($"#{data}  超时"); return; }
+                        // 默认 MockChannel：code=1，data=该请求的 seed 字符串
+                        AppendLog($"#{data}  发出帧 {sentFrame} → 返回帧 {Time.frameCount}  主线程={onMain}（code={code}）");
+                    });
 
                 AppendLog($"#{seed}  已发出（帧 {sentFrame}），等待子线程回结果…");
             }
