@@ -61,5 +61,58 @@ namespace NativeRelay.Tests
             Assert.That(seenSeeds.Count, Is.EqualTo(n), "n 个不同请求各被派发一次");
             Assert.That(bridge.PendingCount, Is.EqualTo(0), "pending 全部排干，无泄漏");
         }
+
+        [Test]
+        public void PartialDrop_DroppedRequestsTimeout_OthersSucceed_PendingDrains()
+        {
+            const int n = 40;
+            var sw = Stopwatch.StartNew();
+            // 偶数 seed 的请求被丢弃（原生层永不回）→ 应走超时；奇数正常回。
+            using var ch = new MockChannel(
+                minDelayMs: 1, maxDelayMs: 15,
+                shouldDrop: seed => seed % 2 == 0);
+            var bridge = new Bridge(ch, () => sw.Elapsed.TotalSeconds, timeoutSeconds: 0.25, capacity: 64);
+
+            var successSeeds = new HashSet<long>();
+            var timeoutSeeds = new HashSet<long>();
+            int misrouted = 0;
+            int wrongError = 0;
+
+            for (int i = 1; i <= n; i++)
+            {
+                long captured = 0;
+                captured = bridge.Request(
+                    command: 1,
+                    payload: null,
+                    onResult: payload =>
+                    {
+                        if (DecodeSeed(payload) != captured) misrouted++;
+                        successSeeds.Add(captured);
+                    },
+                    onError: err =>
+                    {
+                        if (err.Kind != BridgeErrorKind.Timeout || err.Seed != captured) wrongError++;
+                        timeoutSeeds.Add(captured);
+                    });
+            }
+
+            // 循环 Pump 直到全部解决（成功或超时）或保护上限。
+            var deadline = sw.Elapsed + TimeSpan.FromSeconds(10);
+            while (bridge.PendingCount > 0 && sw.Elapsed < deadline)
+            {
+                bridge.Pump();
+                Thread.Sleep(2);
+            }
+            bridge.Pump();
+
+            Assert.That(misrouted, Is.EqualTo(0), "成功项 payload 必须对应自身 seed");
+            Assert.That(wrongError, Is.EqualTo(0), "失败项必须是 Timeout 且 seed 对得上");
+            Assert.That(bridge.PendingCount, Is.EqualTo(0), "成功+超时后 pending 全部排干");
+            Assert.That(successSeeds.Count + timeoutSeeds.Count, Is.EqualTo(n), "每个请求恰好以一种方式收尾");
+            Assert.That(successSeeds.Overlaps(timeoutSeeds), Is.False, "同一请求不得既成功又超时");
+            // 契约：被丢弃的（偶数 seed）必然超时，未丢弃的（奇数）必然成功
+            foreach (var s in successSeeds) Assert.That(s % 2, Is.EqualTo(1L), $"成功的 seed {s} 应为奇数（未丢弃）");
+            foreach (var s in timeoutSeeds) Assert.That(s % 2, Is.EqualTo(0L), $"超时的 seed {s} 应为偶数（被丢弃）");
+        }
     }
 }

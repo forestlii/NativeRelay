@@ -25,6 +25,7 @@ namespace NativeRelay
         private readonly int _minDelayMs;
         private readonly int _maxDelayMs;
         private readonly Func<long, int, byte[], byte[]> _resultFactory;
+        private readonly Func<long, bool> _shouldDrop;
         private readonly Random _rng;
         private readonly object _rngLock = new object();
         private volatile bool _disposed;
@@ -32,11 +33,14 @@ namespace NativeRelay
         /// <param name="minDelayMs">模拟回调最小延迟（默认 50ms）。</param>
         /// <param name="maxDelayMs">模拟回调最大延迟（默认 500ms）。</param>
         /// <param name="resultFactory">结果字节工厂 (seed, command, payload) → resultBytes；默认回显 seed。</param>
+        /// <param name="shouldDrop">可选：返回 true 的 seed 将<b>永不回 OnResult</b>（模拟原生层丢结果/崩溃），
+        /// 用于测试桥的超时清理。默认 null = 都会回。</param>
         /// <param name="seed">随机种子；默认随机。</param>
         public MockChannel(
             int minDelayMs = 50,
             int maxDelayMs = 500,
             Func<long, int, byte[], byte[]> resultFactory = null,
+            Func<long, bool> shouldDrop = null,
             int? seed = null)
         {
             if (minDelayMs < 0) minDelayMs = 0;
@@ -44,6 +48,7 @@ namespace NativeRelay
             _minDelayMs = minDelayMs;
             _maxDelayMs = maxDelayMs;
             _resultFactory = resultFactory ?? DefaultResult;
+            _shouldDrop = shouldDrop;
             _rng = seed.HasValue ? new Random(seed.Value) : new Random();
         }
 
@@ -56,6 +61,9 @@ namespace NativeRelay
         public void Send(long seed, int command, byte[] payload)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(MockChannel));
+
+            // 模拟「原生层收到了请求但永不回结果」（丢失/崩溃）：直接不调度回调，交给桥的超时清理。
+            if (_shouldDrop != null && _shouldDrop(seed)) return;
 
             int delay;
             lock (_rngLock)
