@@ -1,5 +1,7 @@
 # NativeRelay — Architecture
 
+**English** · [简体中文](architecture.zh-CN.md)
+
 NativeRelay standardizes one recurring problem in Unity: **native async APIs call back on
 a background thread, but Unity APIs may only be touched on the main thread.** It relays
 those callbacks safely to the main thread and dispatches each result to the request that
