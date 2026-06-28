@@ -4,9 +4,9 @@
 记忆.md.meta
 CLAUDE.md
 CLAUDE.md.meta
-# HANDOFF.md 等设计/交接稿（个人语境），本地保留
-/docs/
-docs.meta
+# HANDOFF.md（个人语境设计/交接稿），本地保留；docs/ 下其它文档（如 architecture.md）正常入库
+/docs/HANDOFF.md
+/docs/HANDOFF.md.meta
 # devlog / decisions.md 决策账本，本地保留
 /MD/
 MD.meta
