@@ -6,8 +6,10 @@
 **C ABI 契约**。C# 侧把难活做了——用 `GCHandle`「号码牌」标识通道、用 `[MonoPInvokeCallback]` 静态
 跳板收结果。你实现三个 C 函数（用 Objective-C/Swift 暴露 C ABI）。
 
-> **状态**：`IosChannel.cs` 用 `#if UNITY_IOS` 守护（只在 iOS 构建编译）——**未在此编译/真机验证**
-> （无 iOS SDK/设备），属**参考实现**，请在你的 iOS 环境构建并真机验证。
+> **状态**：`IosChannel.cs` 用 `#if UNITY_IOS` 守护（只在 iOS 构建编译）。下面 C ABI 的**现成
+> Objective-C 实现**在配套仓库 **[NativeRelay-Native](https://github.com/forestlii/NativeRelay-Native)**
+> （`ios/Source/`）。iOS 构建需 macOS + Xcode，故**未在此编译/真机验证**——属参考实现，请在你的
+> iOS 环境构建并真机验证。本页讲**契约**。
 
 ## C ABI 契约
 

@@ -7,9 +7,11 @@ talks to over P/Invoke (`[DllImport("__Internal")]`). The C# side does the trick
 a `GCHandle` "claim ticket" identifies the channel and a `[MonoPInvokeCallback]` static
 trampoline receives the result. You implement three C functions (from Objective-C/Swift).
 
-> **Status**: `IosChannel.cs` is guarded by `#if UNITY_IOS` (compiles only in iOS builds) —
-> **not compiled/device-verified here** (no iOS SDK/device). It is a **reference
-> implementation**; build + verify in your iOS environment.
+> **Status**: `IosChannel.cs` is guarded by `#if UNITY_IOS` (compiles only in iOS builds). A
+> ready Objective-C implementation of the C ABI below lives in the companion repo
+> **[NativeRelay-Native](https://github.com/forestlii/NativeRelay-Native)** (`ios/Source/`).
+> iOS builds need macOS + Xcode, so it is **not compiled/device-verified here** — a reference
+> implementation; build + verify in your iOS environment. This page documents the **contract**.
 
 ## The C ABI contract
 
