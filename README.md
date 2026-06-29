@@ -6,7 +6,6 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Unity 6+](https://img.shields.io/badge/Unity-6000.4%2B-black)
-![Zero-GC](https://img.shields.io/badge/hot--path-zero--GC-green)
 
 ## The problem it solves
 
@@ -17,9 +16,10 @@ several requests are in flight, results come back **out of order**, so you must 
 result belongs to which request.
 
 NativeRelay standardizes that whole path — *background callback → safely back to the main
-thread → dispatched per request* — so you don't re-implement it for every SDK. It is
-**zero-GC** on the steady-state hot path, has **no third-party dependencies**, and **runs
-the moment you clone it** (a pure-C# mock channel — no device, no key, no network).
+thread → dispatched per request* — so you don't re-implement it for every SDK. The core
+relay is built to **keep steady-state hot-path allocations low** (reused double buffers,
+cached delegates), has **no third-party dependencies**, and **runs the moment you clone it**
+(a pure-C# mock channel — no device, no key, no network).
 
 ## Install
 
@@ -98,7 +98,7 @@ public enum MyCommand { DoSomething = 1, DoAnother = 2 }
 | `RelayCode` | Framework-reserved result codes: `Timeout` / `Disposed`. Business codes (1/0/10086…) are yours. |
 
 `command`/`code` are `int` on purpose — they cross threads and the JNI/P-Invoke boundary
-with zero allocation and switch cleanly on the native side. `payload`/`data` are `string`
+without boxing and switch cleanly on the native side. `payload`/`data` are `string`
 (cover text/path results; big binary is delivered via a file **path**, not in-memory bytes).
 **The framework never interprets `code` and never touches `data` — it just relays.**
 

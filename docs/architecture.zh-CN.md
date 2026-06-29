@@ -4,7 +4,7 @@
 
 NativeRelay 解决 Unity 里反复出现的一个问题：**原生异步 API 在子线程回调，而 Unity API 只能在主线程
 碰。** 它把这些回调安全中继回主线程，并把每个结果派发回发起它的那次请求——*一个请求 ↔ 一个结果*——
-且**稳态零 GC 分配**。
+并**尽量压低稳态热路径分配**。
 
 ## 分层
 
@@ -19,7 +19,7 @@ NativeRelay 解决 Unity 里反复出现的一个问题：**原生异步 API 在
 │  框架层 Framework（Likeon.NativeRelay 插件核心）             │
 │   · SeedGenerator      —— Interlocked 自增 seed               │
 │   · PendingTable       —— Dictionary<seed, ctx> + 超时扫描    │
-│   · DoubleBufferQueue  —— 子线程写 / 主线程读，零 GC          │
+│   · DoubleBufferQueue  —— 子线程写 / 主线程读，复用           │
 │   · RelayPump          —— 纯 C#（不依赖 UnityEngine）：排干 + │
 │                           按 seed 派发 + 超时清理             │
 │   · MainThreadDispatcher —— MonoBehaviour 薄壳，每帧 Pump     │
@@ -50,8 +50,9 @@ NativeRelay 解决 Unity 里反复出现的一个问题：**原生异步 API 在
 
 - **锁粒度最小化（双缓冲）。** 两个队列——一个子线程写、一个主线程读。每帧主线程持锁只够**交换两个
   引用（O(1)）**，然后在**锁外**排干读队列，子线程几乎不被阻塞。
-- **零 GC。** 两个缓冲复用（绝不重新 new）；每批 `Clear()` 而非重新分配；派发委托缓存。稳态热路径 0 分配，
-  有测试佐证（PlayMode 的 `Is.Not.AllocatingGCMemory`；以及脱离 Unity 的分配字节检查）。
+- **低分配。** 两个缓冲复用（绝不重新 new）；每批 `Clear()` 而非重新分配；派发委托缓存。这让核心中继的
+  稳态热路径分配很轻——有测试守着（PlayMode 的 `Is.Not.AllocatingGCMemory`；以及脱离 Unity 的分配字节检查）。
+  注意：`string` 形式的 payload/结果本身在调用点仍会分配；框架压低的是*它自己*每次派发的开销，并不能让整条请求路径零分配。
 - **超时清理。** 原生若永不回（丢失/崩溃），pump 定期扫 pending 表、移除超过 `timeout` 的项，并以
   `RelayCode.Timeout` 通知业务，防止泄漏。
 
@@ -97,7 +98,7 @@ public sealed class Bridge {
 public static class RelayCode { public const int Timeout = int.MinValue; public const int Disposed = int.MinValue + 1; }
 ```
 
-`command`/`code` 用 `int`（跨线程 + JNI/P-Invoke 边界零分配，原生侧干净 `switch`）；`payload`/`data` 用
+`command`/`code` 用 `int`（跨线程 + JNI/P-Invoke 边界不装箱，原生侧干净 `switch`）；`payload`/`data` 用
 `string`（覆盖常见的文本/路径结果；大块二进制走文件**路径**，不传内存字节）。**框架从不解释 `code`、
 从不碰 `data`，只做中继。** 它只在拿不到原生结果时自产码：`RelayCode.Timeout` / `RelayCode.Disposed`。
 

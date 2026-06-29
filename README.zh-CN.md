@@ -2,11 +2,10 @@
 
 [English](README.md) · **简体中文**
 
-> *把 Unity 里原生层的子线程异步回调，安全中继回主线程，按请求一一对应派发 —— 线程安全、零 GC。*
+> *把 Unity 里原生层的子线程异步回调，安全中继回主线程，按请求一一对应派发 —— 线程安全、热路径低分配。*
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Unity 6+](https://img.shields.io/badge/Unity-6000.4%2B-black)
-![Zero-GC](https://img.shields.io/badge/hot--path-zero--GC-green)
 
 ## 解决什么问题
 
@@ -15,8 +14,8 @@
 结果**乱序**返回，你必须分清哪个结果对应哪一次请求。
 
 NativeRelay 把这整条链路标准化 —— *子线程回调 → 安全切回主线程 → 按请求派发* —— 你不必为每个 SDK
-重写一遍。它在稳态热路径上**零 GC**、**无第三方依赖**，且**克隆下来即可运行**（纯 C# 模拟通道，
-无需真机/key/联网）。
+重写一遍。核心中继**尽量压低稳态热路径分配**（双缓冲复用、委托缓存）、**无第三方依赖**，且**克隆下来即可运行**
+（纯 C# 模拟通道，无需真机/key/联网）。
 
 ## 安装
 
@@ -91,7 +90,7 @@ public enum MyCommand { DoSomething = 1, DoAnother = 2 }
 | `MockChannel` | 纯 C# 通道，子线程随机延迟后回 `(code, data)`。 |
 | `RelayCode` | 框架保留码：`Timeout` / `Disposed`。业务码（1/0/10086…）自定义。 |
 
-`command`/`code` 刻意用 `int` —— 跨线程、跨 JNI/P-Invoke 边界都零分配，原生侧 `switch(int)` 干净分发。
+`command`/`code` 刻意用 `int` —— 跨线程、跨 JNI/P-Invoke 边界都不装箱，原生侧 `switch(int)` 干净分发。
 `payload`/`data` 用 `string`（覆盖文本/路径结果；大块二进制走文件**路径**，不传内存字节）。
 **框架从不解释 `code`、从不碰 `data`，只做中继。**
 

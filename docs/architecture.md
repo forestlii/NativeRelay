@@ -5,7 +5,7 @@
 NativeRelay standardizes one recurring problem in Unity: **native async APIs call back on
 a background thread, but Unity APIs may only be touched on the main thread.** It relays
 those callbacks safely to the main thread and dispatches each result to the request that
-asked for it — *one request ↔ one result* — with **zero steady-state GC allocation**.
+asked for it — *one request ↔ one result* — while **keeping steady-state hot-path allocations low**.
 
 ## Layers
 
@@ -20,7 +20,7 @@ asked for it — *one request ↔ one result* — with **zero steady-state GC al
 │  Framework layer  (Likeon.NativeRelay, the plugin core)      │
 │   · SeedGenerator      — Interlocked auto-increment seed      │
 │   · PendingTable       — Dictionary<seed, ctx> + timeout scan │
-│   · DoubleBufferQueue  — sub-thread writes / main reads, 0-GC │
+│   · DoubleBufferQueue  — sub-thread write / main read, reused │
 │   · RelayPump          — pure C# (no UnityEngine): drain +    │
 │                          dispatch by seed + timeout cleanup   │
 │   · MainThreadDispatcher — MonoBehaviour shell, pumps/frame   │
@@ -59,10 +59,12 @@ async result on a background thread is just an `INativeChannel` implementation.
   read by the main thread. Each frame the main thread holds the lock only long enough to
   **swap the two references (O(1))**, then drains the read queue **outside the lock**, so
   workers are almost never blocked.
-- **Zero GC.** The two buffers are reused (never re-`new`ed); each batch is `Clear()`ed
-  rather than reallocated; dispatch delegates are cached. Steady-state hot path = 0 alloc,
-  asserted by tests (`Is.Not.AllocatingGCMemory` in PlayMode; allocation-byte checks
-  off-Unity).
+- **Low allocation.** The two buffers are reused (never re-`new`ed); each batch is `Clear()`ed
+  rather than reallocated; dispatch delegates are cached. This keeps the core relay's
+  steady-state hot path allocation-light — tests guard it (`Is.Not.AllocatingGCMemory` in
+  PlayMode; allocation-byte checks off-Unity). Note the `string` payload/result themselves
+  still allocate at the call site; the framework keeps *its own* per-dispatch overhead low,
+  it does not make the whole request path allocation-free.
 - **Timeout cleanup.** If the native side never replies (lost/crashed), the pump
   periodically scans the pending table and removes entries older than `timeout`, invoking
   a `RelayCode.Timeout` so the business is notified instead of leaking.
@@ -114,7 +116,7 @@ public sealed class Bridge {
 public static class RelayCode { public const int Timeout = int.MinValue; public const int Disposed = int.MinValue + 1; }
 ```
 
-`command`/`code` are `int` (cross threads + the JNI/P-Invoke boundary with zero allocation,
+`command`/`code` are `int` (cross threads + the JNI/P-Invoke boundary without boxing,
 clean `switch` on the native side); `payload`/`data` are `string` (cover the common
 text/path results; big binary is delivered via a file **path**, not in-memory bytes).
 **The framework never interprets `code` and never touches `data` — it just relays.** It only
