@@ -6,8 +6,9 @@
 它是一个**通用 JNI 中继模板**：把 seed/线程/回调这套管线都做好，你只需在每个 `command` 下填入真正
 要做的事，返回 `(int code, String data)`。
 
-> **状态**：C# 侧（`AndroidChannel.cs`）已发布且**通过编译验证**；下面的 Java 侧是**参考契约**，
-> **尚未在此构建成 `.aar` 或真机验证**（无 Android SDK/设备）。请在 Android Studio 构建并真机验证。
+> **状态**：C# 侧（`AndroidChannel.cs`）已发布且**通过编译验证**；实现下面 Java 侧的**现成可构建
+> Android Studio 工程**在配套仓库 **[NativeRelay-Native](https://github.com/forestlii/NativeRelay-Native)**
+> （`android/`）。其 Java 契约已编译通过；打成 `.aar` 与真机验证仍待做。本页讲**契约**——构建请克隆那个仓库。
 
 ## Java 契约
 
@@ -71,8 +72,10 @@ public class NativeRelayChannel {
 
 ## 构建 .aar
 
-1. 在 **Android Studio** 建一个 **Android Library** 模块（包名 `com.likeon.nativerelay`），加入上面的类。
-2. 构建 release `.aar`（Gradle `assembleRelease`），产物在 `module/build/outputs/aar/`。
+1. 克隆 **[NativeRelay-Native](https://github.com/forestlii/NativeRelay-Native)**，用 **Android Studio**
+   打开它的 `android/` 目录——里面已含本类（Android Library 模块，包名 `com.likeon.nativerelay`）。
+   （或按上面的类自己重建模块。）
+2. 构建 release `.aar`：`./gradlew :nativerelay:assembleRelease`，产物在 `nativerelay/build/outputs/aar/`。
 3. 把 `.aar` 放进 Unity 工程的 **`Assets/Plugins/Android/`**。
 
 ## 使用

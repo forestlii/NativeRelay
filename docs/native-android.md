@@ -7,9 +7,11 @@ package) talks to, and how to build it into an `.aar`. It is a **generic JNI rel
 template**: it handles all the seed/thread/callback plumbing, and you fill in the actual
 work per `command`, returning `(int code, String data)`.
 
-> **Status**: The C# side (`AndroidChannel.cs`) ships and is **compile-verified**. The Java
-> side below is a **reference contract**, **not yet built into an `.aar` or device-tested**
-> here (no Android SDK/device). Build it in Android Studio and verify on a device.
+> **Status**: The C# side (`AndroidChannel.cs`) ships and is **compile-verified**. A
+> ready-to-build Android Studio project implementing the Java side below lives in the companion
+> repo **[NativeRelay-Native](https://github.com/forestlii/NativeRelay-Native)** (`android/`).
+> Its Java contract compiles; building the `.aar` and on-device verification are still pending.
+> This page documents the **contract** — clone that repo to build.
 
 ## The Java contract
 
@@ -75,9 +77,11 @@ public class NativeRelayChannel {
 
 ## Build the .aar
 
-1. In **Android Studio**, create an **Android Library** module (package
-   `com.likeon.nativerelay`), add the class above.
-2. Build the release `.aar` (Gradle `assembleRelease`); output under `module/build/outputs/aar/`.
+1. Clone **[NativeRelay-Native](https://github.com/forestlii/NativeRelay-Native)** and open its
+   `android/` folder in **Android Studio** — it already ships this class as an Android Library
+   module (package `com.likeon.nativerelay`). (Or recreate the module yourself from the class above.)
+2. Build the release `.aar`: `./gradlew :nativerelay:assembleRelease`; output under
+   `nativerelay/build/outputs/aar/`.
 3. Drop the `.aar` into your Unity project at **`Assets/Plugins/Android/`**.
 
 ## Use it
