@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -46,9 +47,13 @@ namespace Likeon.NativeRelay
         /// <summary>
         /// 便捷工厂：创建一个由本 dispatcher 每帧驱动、时钟取自 <see cref="Now"/> 的 <see cref="Bridge"/>。
         /// </summary>
-        public Bridge CreateBridge(INativeChannel channel, double timeoutSeconds = 10.0, int capacity = 64)
+        /// <param name="onError">可选：业务 onResult 回调抛出的异常出口；默认接 <see cref="Debug.LogException(Exception)"/>，
+        /// 这样一个回调出错只会在 Console 记一条异常，不会打断本帧其它请求的派发。传自定义委托可改为上报/吞掉。</param>
+        public Bridge CreateBridge(INativeChannel channel, double timeoutSeconds = 10.0, int capacity = 64, Action<Exception> onError = null)
         {
-            var bridge = new Bridge(channel, () => Now, timeoutSeconds, capacity);
+            // 默认把业务回调异常记到 Console（方法组显式赋值，避开 ?? 目标类型转换的版本敏感性）。
+            if (onError == null) onError = Debug.LogException;
+            var bridge = new Bridge(channel, () => Now, timeoutSeconds, capacity, onError);
             Register(bridge);
             return bridge;
         }

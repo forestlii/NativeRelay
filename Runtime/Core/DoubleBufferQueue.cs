@@ -64,11 +64,19 @@ namespace Likeon.NativeRelay
             }
 
             // 锁外处理：遍历 + 派发 + 清空，均不阻塞正在 Enqueue 的子线程。
-            for (int i = 0; i < batch.Count; i++)
+            // try/finally 保证即使 handler 抛异常也必清空本批——否则旧批会随下次交换混进新批被重复派发。
+            // （正常情况下 handler 由 RelayPump.SafeInvoke 兜住业务异常、不会抛；此处为纵深防御。）
+            try
             {
-                handler(batch[i]);
+                for (int i = 0; i < batch.Count; i++)
+                {
+                    handler(batch[i]);
+                }
             }
-            batch.Clear(); // 复用缓冲，不新建；清空后它将作为下次交换的空写缓冲
+            finally
+            {
+                batch.Clear(); // 复用缓冲，不新建；清空后它将作为下次交换的空写缓冲
+            }
         }
 
         /// <summary>当前写缓冲中待处理的元素数（仅供测试/诊断；会瞬时变化）。</summary>

@@ -31,12 +31,14 @@ namespace Likeon.NativeRelay
         /// <param name="clock">当前时刻（秒）提供者；用于请求时间戳与超时判定，Register/Pump 共用同一时钟。</param>
         /// <param name="timeoutSeconds">请求超时阈值（秒）。</param>
         /// <param name="capacity">队列/pending 初始容量（按峰值预估免运行期扩容分配）。</param>
-        public Bridge(INativeChannel channel, Func<double> clock, double timeoutSeconds = 10.0, int capacity = 64)
+        /// <param name="onError">可选：业务 onResult 回调抛出的异常会被就地隔离并交给它（一个回调出错不连累同批其它回调，
+        /// 也不打断每帧 Pump）；传 null 则异常被静默吞掉。Unity 下由 <c>MainThreadDispatcher</c> 默认接 <c>Debug.LogException</c>。</param>
+        public Bridge(INativeChannel channel, Func<double> clock, double timeoutSeconds = 10.0, int capacity = 64, Action<Exception> onError = null)
         {
             _channel = channel ?? throw new ArgumentNullException(nameof(channel));
             _clock = clock ?? throw new ArgumentNullException(nameof(clock));
             _seeds = new SeedGenerator();
-            _pump = new RelayPump(timeoutSeconds, capacity);
+            _pump = new RelayPump(timeoutSeconds, capacity, onError);
 
             // 订阅子线程回调：只把结果入队（线程安全），派发推迟到主线程 Pump。
             _onChannelResult = _pump.Enqueue;

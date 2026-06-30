@@ -115,5 +115,38 @@ namespace Likeon.NativeRelay.Tests
 
             Assert.That(gotCode, Is.EqualTo(1), "应是成功码，不是超时");
         }
+
+        [Test]
+        public void Pump_OneCallbackThrows_OthersStillDispatched_AndErrorRouted()
+        {
+            var errors = new List<System.Exception>();
+            var pump = new RelayPump(timeoutSeconds: 100, onError: e => errors.Add(e));
+
+            bool seed1Called = false, seed3Called = false;
+            pump.Register(1, (code, data) => seed1Called = true, now: 0);
+            pump.Register(2, (code, data) => throw new System.InvalidOperationException("boom"), now: 0);
+            pump.Register(3, (code, data) => seed3Called = true, now: 0);
+
+            pump.Enqueue(1, 1, "a");
+            pump.Enqueue(2, 1, "b"); // 这个回调会抛异常
+            pump.Enqueue(3, 1, "c");
+            Assert.DoesNotThrow(() => pump.Pump(now: 0), "一个回调抛异常不应打断整帧派发");
+
+            Assert.That(seed1Called, Is.True, "抛异常前的回调正常派发");
+            Assert.That(seed3Called, Is.True, "抛异常的回调不应连累其后的回调");
+            Assert.That(errors.Count, Is.EqualTo(1), "异常应被路由到 onError 出口");
+            Assert.That(pump.PendingCount, Is.EqualTo(0), "三个请求都已完成并移除");
+        }
+
+        [Test]
+        public void Pump_CallbackThrows_NoErrorSink_StillNoThrow_AndPendingCleared()
+        {
+            var pump = new RelayPump(timeoutSeconds: 100); // onError = null：异常被静默隔离
+            pump.Register(1, (code, data) => throw new System.Exception("x"), now: 0);
+
+            pump.Enqueue(1, 1, "a");
+            Assert.DoesNotThrow(() => pump.Pump(now: 0), "无错误出口也不应把异常抛出 Pump");
+            Assert.That(pump.PendingCount, Is.EqualTo(0), "抛异常的请求仍被移除，pending 不泄漏");
+        }
     }
 }

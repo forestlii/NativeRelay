@@ -41,9 +41,14 @@ namespace Likeon.NativeRelay
         private readonly Action<long, PendingContext> _onTimeout;
         private readonly Action<long, PendingContext> _onDispose;
 
+        // 业务回调抛异常时的可选出口（如 Unity 壳层接 Debug.LogException）；null = 无出口（异常被吞）。
+        private readonly Action<Exception> _onError;
+
         /// <param name="timeoutSeconds">请求超时阈值（秒）；超过则以 <see cref="RelayCode.Timeout"/> 回调。</param>
         /// <param name="capacity">队列与 pending 的初始容量（按峰值预估可免运行期扩容分配）。</param>
-        public RelayPump(double timeoutSeconds = 10.0, int capacity = 64)
+        /// <param name="onError">可选：业务回调（onResult）抛出的异常会被就地隔离并交给它（避免一个回调连累同批其它回调）；
+        /// 传 null 则异常被静默吞掉。Unity 下由壳层默认接 <c>Debug.LogException</c>。</param>
+        public RelayPump(double timeoutSeconds = 10.0, int capacity = 64, Action<Exception> onError = null)
         {
             _timeoutSeconds = timeoutSeconds > 0 ? timeoutSeconds : 0;
             _queue = new DoubleBufferQueue<RelayMessage>(capacity);
@@ -51,6 +56,7 @@ namespace Likeon.NativeRelay
             _dispatchOne = DispatchOne;
             _onTimeout = OnTimeout;
             _onDispose = OnDispose;
+            _onError = onError;
         }
 
         /// <summary>当前未完成请求数（诊断 / 测试用）。</summary>
@@ -99,18 +105,36 @@ namespace Likeon.NativeRelay
             // 命中 pending 则在主线程把 (code, data) 交给业务；未命中 = 已超时清理/未知/重复结果 → 安全忽略。
             if (_pending.TryComplete(msg.Seed, out var ctx))
             {
-                ctx.OnResult?.Invoke(msg.Code, msg.Data);
+                SafeInvoke(ctx.OnResult, msg.Code, msg.Data);
             }
         }
 
         private void OnTimeout(long seed, PendingContext ctx)
         {
-            ctx.OnResult?.Invoke(RelayCode.Timeout, EmptyData);
+            SafeInvoke(ctx.OnResult, RelayCode.Timeout, EmptyData);
         }
 
         private void OnDispose(long seed, PendingContext ctx)
         {
-            ctx.OnResult?.Invoke(RelayCode.Disposed, EmptyData);
+            SafeInvoke(ctx.OnResult, RelayCode.Disposed, EmptyData);
+        }
+
+        /// <summary>
+        /// 就地隔离业务回调的异常：一个 onResult 抛异常不连累同批其它回调，
+        /// 也保证 <see cref="DoubleBufferQueue{T}"/> 的 handler 永不抛出（batch 必被 Clear，杜绝"残留混进下一帧重派"）。
+        /// 异常交给可选的 <c>_onError</c> 出口（无出口则只能吞掉）。稳态成功路径不进 catch、零额外分配。
+        /// </summary>
+        private void SafeInvoke(Action<int, string> cb, int code, string data)
+        {
+            if (cb == null) return;
+            try
+            {
+                cb(code, data);
+            }
+            catch (Exception e)
+            {
+                _onError?.Invoke(e);
+            }
         }
     }
 }
