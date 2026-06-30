@@ -15,7 +15,7 @@ namespace Likeon.NativeRelay
     /// 说明：MockChannel 的「调度一次回调」本身会有少量分配（它替代的是真实原生侧，不属于桥的零 GC 热路径）；
     /// 桥的零 GC 硬指标针对的是 <see cref="DoubleBufferQueue{T}"/> 收发与每帧派发那条路径。
     /// </para>
-    /// 默认结果字节回显 seed（8 字节小端），便于测试解码校验是否错配；可通过构造参数自定义结果工厂（供 ASR demo 用）。
+    /// 默认结果 <c>(code=1, data=seed.ToString())</c> 回显 seed，便于测试校验是否错配；可通过构造参数自定义结果工厂（供 ASR demo 用）。
     /// </remarks>
     public sealed class MockChannel : INativeChannel
     {

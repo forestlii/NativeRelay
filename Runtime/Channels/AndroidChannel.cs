@@ -14,7 +14,7 @@ namespace Likeon.NativeRelay
     /// <c>Assets/Plugins/Android/</c>。Java 契约与构建步骤见 <c>docs/native-android.md</c>。
     /// <para>
     /// ⚠️ <b>验证状态（诚实标注）</b>：本 C# 侧已随包发布并通过<b>编译</b>验证；但其<b>运行时行为依赖真机 + 配套 .aar</b>，
-    /// <b>尚未在真机上验证过</b>（开发机无 Android SDK/设备）。尤其 <c>byte[]</c> 跨 <see cref="AndroidJavaProxy"/> 的
+    /// <b>尚未在真机上验证过</b>（开发机无 Android SDK/设备）。尤其 <c>string</c> 跨 <see cref="AndroidJavaProxy"/> 的
     /// 编组细节，请在真机上确认。等具备真机条件后再补 Java/.aar 与端到端验证。
     /// </para>
     /// 桥侧契约不变：<see cref="INativeChannel"/>。

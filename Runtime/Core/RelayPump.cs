@@ -23,7 +23,7 @@ namespace Likeon.NativeRelay
     /// 也让未来 JNI/P-Invoke 边界保持干净。MonoBehaviour 外壳（MainThreadDispatcher）只是每帧调一次 <see cref="Pump"/>。
     /// </summary>
     /// <remarks>
-    /// <b>纯码模型</b>：结果统一是 <c>(int code, byte[] data)</c>，框架不解释 code，原样透传给业务。
+    /// <b>纯码模型</b>：结果统一是 <c>(int code, string data)</c>，框架不解释 code，原样透传给业务。
     /// 框架只在拿不到原生结果时自产码：超时 → <see cref="RelayCode.Timeout"/>，关闭 → <see cref="RelayCode.Disposed"/>。
     /// 线程模型：<see cref="Enqueue"/> 可在子线程调用（只塞队列）；<see cref="Register"/>/<see cref="Pump"/> 在主线程。
     /// 零 GC：派发用的 handler 委托与空数据均缓存为字段，稳态成功/超时路径 0 Alloc。
