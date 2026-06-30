@@ -86,6 +86,33 @@ You define your own command enum and cast to `int` (the core never assumes busin
 public enum MyCommand { DoSomething = 1, DoAnother = 2 }
 ```
 
+## Using from Lua (xLua)
+
+Driving the bridge from Lua works the same way — every business call, plus all
+success / failure / error-code handling, can live in Lua. A ready-to-use boilerplate
+(thin Lua wrapper + the required xLua gen config + a pure-Lua business sample) lives in the
+companion repo: **[NativeRelay-Native / `examples/xlua/`](https://github.com/forestlii/NativeRelay-Native/tree/main/examples/xlua)**.
+
+```lua
+local NR        = CS.Likeon.NativeRelay
+local RelayCode = NR.RelayCode
+
+local channel = NR.NativeChannelFactory.CreateForCurrentPlatform()
+local bridge  = NR.MainThreadDispatcher.Instance:CreateBridge(channel, 5.0)  -- ':' for instance calls
+
+-- onResult runs on the MAIN thread, so the (non-thread-safe) Lua VM is safe to touch.
+bridge:Request(myCommand, payload, function(code, data)
+    if code == RelayCode.Timeout then        -- timed out
+    elseif code == 1 then                    -- success: use data (text/path)
+    else                                     -- your business error code
+    end
+end)
+```
+
+> **IL2CPP / AOT trap:** passing a Lua function as the C# `Action<int,string>` onResult
+> throws on device unless that delegate is registered in `[CSharpCallLua]` and xLua code is
+> regenerated. The sample's `NativeRelayXLuaConfig.cs` does exactly this — don't skip it.
+
 ## API at a glance
 
 | Type | Purpose |
