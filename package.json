@@ -2,7 +2,7 @@
   "name": "com.likeon.nativerelay",
   "version": "0.2.0",
   "displayName": "NativeRelay",
-  "description": "Thread-safe relay for native async callbacks in Unity, dispatched on the main thread, one request <-> one result. Low-allocation seed + pending-table + double-buffer-queue bridge between native worker-thread callbacks and your C# business layer.",
+  "description": "Thread-safe relay for native async callbacks in Unity, dispatched on the main thread, one request <-> one result. Low-GC seed + pending-table + double-buffer-queue bridge between native worker-thread callbacks and your C# business layer.",
   "unity": "6000.4",
   "license": "MIT",
   "documentationUrl": "https://github.com/forestlii/NativeRelay/blob/main/README.md",
@@ -16,7 +16,7 @@
     "thread",
     "main-thread",
     "dispatcher",
-    "low-alloc",
+    "low-gc",
     "jni",
     "interop"
   ],

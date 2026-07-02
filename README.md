@@ -2,7 +2,7 @@
 
 **English** · [简体中文](README.zh-CN.md)
 
-> *Thread-safe relay for native async callbacks in Unity — dispatched on the main thread, one request ↔ one result.*
+> *Thread-safe relay for native async callbacks in Unity — dispatched on the main thread, one request ↔ one result, low-GC on the hot path.*
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Unity 6+](https://img.shields.io/badge/Unity-6000.4%2B-black)

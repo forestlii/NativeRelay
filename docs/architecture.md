@@ -59,7 +59,7 @@ async result on a background thread is just an `INativeChannel` implementation.
   read by the main thread. Each frame the main thread holds the lock only long enough to
   **swap the two references (O(1))**, then drains the read queue **outside the lock**, so
   workers are almost never blocked.
-- **Low allocation.** The two buffers are reused (never re-`new`ed); each batch is `Clear()`ed
+- **Low GC.** The two buffers are reused (never re-`new`ed); each batch is `Clear()`ed
   rather than reallocated; dispatch delegates are cached. This keeps the core relay's
   steady-state hot path allocation-light — tests guard it (`Is.Not.AllocatingGCMemory` in
   PlayMode; allocation-byte checks off-Unity). Note the `string` payload/result themselves

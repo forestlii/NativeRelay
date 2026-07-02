@@ -2,7 +2,7 @@
 
 [English](README.md) · **简体中文**
 
-> *把 Unity 里原生层的子线程异步回调，安全中继回主线程，按请求一一对应派发 —— 线程安全、热路径低分配。*
+> *把 Unity 里原生层的子线程异步回调，安全中继回主线程，按请求一一对应派发 —— 线程安全、热路径低 GC。*
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Unity 6+](https://img.shields.io/badge/Unity-6000.4%2B-black)
