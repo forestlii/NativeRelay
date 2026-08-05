@@ -5,7 +5,7 @@
 > *把 Unity 里原生层的子线程异步回调，安全中继回主线程，按请求一一对应派发 —— 线程安全、热路径低 GC。*
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-![Unity 6+](https://img.shields.io/badge/Unity-6000.4%2B-black)
+![Unity 6+](https://img.shields.io/badge/Unity-2022.3%2B-black)
 
 ## 解决什么问题
 
@@ -21,7 +21,7 @@ NativeRelay 把这整条链路标准化 —— *子线程回调 → 安全切回
 
 **推荐 —— Package Manager + git URL：**
 
-1. 打开你的 Unity 6 工程 → **Window → Package Manager**。
+1. 打开你的 Unity 2022.3+ 工程 → **Window → Package Manager**。
 2. 左上角 **`+` → Add package from git URL…**，粘贴并 **Add**：
    ```
    https://github.com/forestlii/NativeRelay.git
@@ -30,7 +30,7 @@ NativeRelay 把这整条链路标准化 —— *子线程回调 → 安全切回
    想锁定某个版本，在末尾加 tag，例如 `…/NativeRelay.git#v0.2.0`。
 3. *（可选，想跑示例）* 选中 **NativeRelay** → **Samples** 标签 → **Import** 一个示例。
 
-要求 **Unity 6（6000.4）及以上**。
+要求 **Unity 2022.3 及以上**。
 
 > **更新** git-URL 包：Unity 会缓存解析到的提交。要拉新版本，请移除该包再重新 Add git URL
 > （或改 `Packages/packages-lock.json` 里它的条目）。如果你要频繁改包，建议用 **Add package from disk**
@@ -169,7 +169,7 @@ end)
 
 ## 环境要求
 
-- **Unity 6（6000.4）+**（本地验证于 `6000.4.10f1`）。
+- **Unity 2022.3+**（本地验证于 `6000.4.10f1`）。
 - 纯 C#、无第三方 DLL。业务层若想用 Lua（xLua/toLua），通过绑定调 `Bridge.Request` 即可——核心不依赖 Lua。
 
 ---

@@ -5,7 +5,7 @@
 > *Thread-safe relay for native async callbacks in Unity — dispatched on the main thread, one request ↔ one result, low-GC on the hot path.*
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-![Unity 6+](https://img.shields.io/badge/Unity-6000.4%2B-black)
+![Unity 6+](https://img.shields.io/badge/Unity-2022.3%2B-black)
 
 ## The problem it solves
 
@@ -25,7 +25,7 @@ cached delegates), has **no third-party dependencies**, and **runs the moment yo
 
 **Recommended — Unity Package Manager (git URL):**
 
-1. Open your Unity 6 project → **Window → Package Manager**.
+1. Open your Unity 2022.3+ project → **Window → Package Manager**.
 2. Top-left **`+` → Add package from git URL…**, paste and **Add**:
    ```
    https://github.com/forestlii/NativeRelay.git
@@ -34,7 +34,7 @@ cached delegates), has **no third-party dependencies**, and **runs the moment yo
    To pin a specific release, append a tag, e.g. `…/NativeRelay.git#v0.2.0`.
 3. *(optional, to try a demo)* Select **NativeRelay** → **Samples** tab → **Import** a sample.
 
-Requires **Unity 6 (6000.4)+**.
+Requires **Unity 2022.3+**.
 
 > **Updating** a git-URL package: Unity caches the resolved commit. To pull a newer version,
 > remove the package and re-add the git URL (or bump its entry in `Packages/packages-lock.json`).
@@ -187,7 +187,7 @@ results as `(code, data)`) is settled; the API may still evolve in minor version
 
 ## Requirements
 
-- **Unity 6 (6000.4)+** (verified locally on `6000.4.10f1`).
+- **Unity 2022.3+** (verified locally on `6000.4.10f1`).
 - Pure C#, no third-party DLLs. A Lua business layer (xLua/toLua) can call `Bridge.Request`
   through a binding if you want — the core doesn't depend on Lua.
 
