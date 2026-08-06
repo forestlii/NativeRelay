@@ -16,8 +16,5 @@ namespace Likeon.NativeRelay
 
         /// <summary>桥已 Dispose / 关闭，未完成的请求被取消，框架以此码通知业务收尾。</summary>
         public const int Disposed = int.MinValue + 1;
-
-        /// <summary>当前平台无原生实现（NoopChannel 立即以此码应答）：业务收到后应按"平台不支持"忽略。</summary>
-        public const int PlatformUnsupported = int.MinValue + 2;
     }
 }

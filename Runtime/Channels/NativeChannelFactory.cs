@@ -15,7 +15,7 @@ namespace Likeon.NativeRelay
     /// </remarks>
     public static class NativeChannelFactory
     {
-        /// <summary>创建当前平台对应的通道（Editor → Mock；Android → JNI；iOS / Windows / 桌面 → Noop）。</summary>
+        /// <summary>创建当前平台对应的通道（Editor / Windows / 其它桌面 → Mock；Android → JNI；iOS → P/Invoke）。</summary>
         public static INativeChannel CreateForCurrentPlatform()
         {
 #if UNITY_EDITOR
@@ -23,9 +23,9 @@ namespace Likeon.NativeRelay
 #elif UNITY_ANDROID
             return new AndroidChannel(); // JNI（需配套 .aar，见 docs/native-android.md）
 #elif UNITY_IOS
-            return new NoopChannel();    // iOS 原生未接入前用 Noop（PlatformUnsupported 立即应答），避免 P/Invoke 缺符号炸包
+            return new IosChannel();     // P/Invoke __Internal + GCHandle（需配套原生库，见 docs/native-ios.md）
 #else
-            return new NoopChannel();   // Windows / 桌面 / 其它：无原生实现，Noop 安全空转
+            return new MockChannel();   // Windows / 桌面 / 其它：手游原生行为不适用，走 Mock
 #endif
         }
     }
