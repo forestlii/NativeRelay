@@ -141,6 +141,28 @@ You provide the matching native binary implementing the documented contract — 
 ABI (see [docs/native-ios.md](docs/native-ios.md)). To write your own channel, just implement
 `INativeChannel` (`Send(long seed, int command, string payload)` + `event Action<long,int,string> OnResult` + `Dispose`).
 
+### Capability matrix: filter commands per platform (FilteringChannel)
+
+A command is often implemented only on some platforms (e.g. an anti-cheat command that only exists
+on Android). The pattern: **call sites stay identical everywhere (`bridge.Request`); "which command
+is implemented on which platform" lives in your project's channel setup**:
+
+```csharp
+INativeChannel channel = NativeChannelFactory.CreateForCurrentPlatform();
+INativeChannel gated = new FilteringChannel(channel, MyCommands.IsImplementedHere, fallbackCode: 0);
+var bridge = MainThreadDispatcher.Instance.CreateBridge(gated, timeoutSeconds: 5.0);
+
+bridge.Request(MyCommands.AntiCheatScan, null, (code, data) => { /* same code on every platform */ });
+```
+
+`FilteringChannel` (composition wrapper) forwards a command to the inner channel only when
+`isImplemented(command)` says yes; otherwise it immediately answers with your own
+`(fallbackCode, fallbackData)`. If nothing is implemented on a platform, the inner channel is never
+touched (on iOS without the native lib, `IosChannel`'s P/Invoke constructor never runs → no symbol
+references). The framework never interprets code/data — the fallback response is yours to define.
+Prefer inheritance? `AndroidChannel` / `IosChannel` / `MockChannel` are unsealed with virtual
+`Send`/`Dispose`; inheritance and filtering compose.
+
 ### Where the native code lives
 
 **This package is 100% C#** — it contains no `.java` / `.aar` / `.so`. The native side is

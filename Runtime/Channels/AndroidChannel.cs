@@ -19,7 +19,7 @@ namespace Likeon.NativeRelay
     /// </para>
     /// 桥侧契约不变：<see cref="INativeChannel"/>。
     /// </remarks>
-    public sealed class AndroidChannel : INativeChannel
+    public class AndroidChannel : INativeChannel
     {
         /// <summary>默认对接的 Java 类全名（见 docs/native-android.md 的契约）。</summary>
         public const string DefaultJavaClass = "com.likeon.nativerelay.NativeRelayChannel";
@@ -41,7 +41,7 @@ namespace Likeon.NativeRelay
         }
 
         /// <inheritdoc />
-        public void Send(long seed, int command, string payload)
+        public virtual void Send(long seed, int command, string payload)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(AndroidChannel));
             // 对应 Java: void send(long seed, int command, String payload)
@@ -55,7 +55,7 @@ namespace Likeon.NativeRelay
         }
 
         /// <summary>关闭通道：通知 Java 释放并销毁 Java 对象。</summary>
-        public void Dispose()
+        public virtual void Dispose()
         {
             if (_disposed) return;
             _disposed = true;

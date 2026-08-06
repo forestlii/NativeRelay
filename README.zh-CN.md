@@ -130,6 +130,25 @@ end)
 （Android 打 `.aar`，见 [docs/native-android.md](docs/native-android.md)；iOS 暴露 C ABI 的静态库，见
 [docs/native-ios.md](docs/native-ios.md)）。想自己写通道，实现 `INativeChannel` 即可。
 
+### 能力矩阵：按平台过滤命令（FilteringChannel）
+
+业务调用的 command 往往只在部分平台有原生实现（例如某反作弊命令只做了 Android）。模式是：
+**业务调用点全平台统一 `bridge.Request`，"哪条命令在哪个平台有实现"收在项目自己的通道配置里**：
+
+```csharp
+INativeChannel channel = NativeChannelFactory.CreateForCurrentPlatform();
+INativeChannel gated = new FilteringChannel(channel, MyCommands.IsImplementedHere, fallbackCode: 0);
+var bridge = MainThreadDispatcher.Instance.CreateBridge(gated, timeoutSeconds: 5.0);
+
+bridge.Request(MyCommands.AntiCheatScan, null, (code, data) => { /* 全平台同一写法 */ });
+```
+
+`FilteringChannel`（组合包装）按 `isImplemented(command)` 决定真正下发还是立即以项目自定义的
+`(fallbackCode, fallbackData)` 应答；某平台一条都没实现时内层通道从不被调用（iOS 无原生库时
+`IosChannel` 的 P/Invoke 构造函数不会执行 → 无符号引用）。框架不解释 code/data 语义，兜底应答码
+也由项目自定。想复用基类行为的也可以直接继承通道（`AndroidChannel` / `IosChannel` / `MockChannel`
+均未密封、`Send`/`Dispose` 为 virtual）；继承与过滤可叠加。
+
 ### 原生代码在哪、怎么打包
 
 **本包是 100% C#** —— 不含任何 `.java` / `.aar` / `.so`。原生侧是*你的* `INativeChannel` 实现，

@@ -16,7 +16,7 @@ namespace Likeon.NativeRelay
     /// 见 <c>docs/native-ios.md</c>。⚠️ <b>验证状态</b>：开发机无 iOS SDK/设备，本文件整体 <c>#if UNITY_IOS</c>
     /// 守护、<b>只在 iOS 构建里编译</b>，未经此处编译/真机验证，属<b>参考实现</b>，请在你的 iOS 环境构建 + 真机验证。
     /// </remarks>
-    public sealed class IosChannel : INativeChannel
+    public class IosChannel : INativeChannel
     {
         // native → C# 的回调签名：(context=GCHandle, seed, code, utf8 data 指针)。
         private delegate void ResultCallback(IntPtr context, long seed, int code, IntPtr utf8Data);
@@ -45,7 +45,7 @@ namespace Likeon.NativeRelay
         }
 
         /// <inheritdoc />
-        public void Send(long seed, int command, string payload)
+        public virtual void Send(long seed, int command, string payload)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(IosChannel));
             NativeRelayChannel_Send(_context, seed, command, payload);
@@ -62,7 +62,7 @@ namespace Likeon.NativeRelay
             ch.OnResult?.Invoke(seed, code, data);      // 在子线程触发，桥会切回主线程
         }
 
-        public void Dispose()
+        public virtual void Dispose()
         {
             if (_disposed) return;
             _disposed = true;

@@ -17,7 +17,7 @@ namespace Likeon.NativeRelay
     /// </para>
     /// 默认结果 <c>(code=1, data=seed.ToString())</c> 回显 seed，便于测试校验是否错配；可通过构造参数自定义结果工厂（供 ASR demo 用）。
     /// </remarks>
-    public sealed class MockChannel : INativeChannel
+    public class MockChannel : INativeChannel
     {
         /// <summary>原生层 → 框架层：结果 (seed, code, data) 回来（在子线程触发）。</summary>
         public event Action<long, int, string> OnResult;
@@ -58,7 +58,7 @@ namespace Likeon.NativeRelay
         }
 
         /// <inheritdoc />
-        public void Send(long seed, int command, string payload)
+        public virtual void Send(long seed, int command, string payload)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(MockChannel));
 
@@ -90,7 +90,7 @@ namespace Likeon.NativeRelay
         }
 
         /// <summary>关闭通道：之后不再派发任何结果（已在途的回调会在触发前检查并跳过）。</summary>
-        public void Dispose()
+        public virtual void Dispose()
         {
             _disposed = true;
             OnResult = null;
