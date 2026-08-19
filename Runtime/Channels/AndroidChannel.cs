@@ -44,8 +44,11 @@ namespace Likeon.NativeRelay
         public virtual void Send(long seed, int command, string payload)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(AndroidChannel));
+            // JNI 进出各打一点：若 begin 后没有 returned，阻塞在 JNI 调用本身
+            if (RelayLog.Enabled) RelayLog.Info("jni send begin seed=" + seed + " cmd=" + command);
             // 对应 Java: void send(long seed, int command, String payload)
             _java.Call("send", seed, command, payload);
+            if (RelayLog.Enabled) RelayLog.Info("jni send returned seed=" + seed);
         }
 
         // 由回调代理在 Java 子线程上调用；这里只把事件抛出去，桥负责切回主线程。
@@ -91,6 +94,7 @@ namespace Likeon.NativeRelay
                     long seed = javaArgs[0].Call<long>("longValue");   // 装箱的 java.lang.Long
                     int code = javaArgs[1].Call<int>("intValue");     // 装箱的 java.lang.Integer
                     string data = javaArgs[2] != null ? javaArgs[2].Call<string>("toString") : null; // java.lang.String
+                    if (RelayLog.Enabled) RelayLog.Info("proxy onResult seed=" + seed + " code=" + code);
                     _owner.RaiseResult(seed, code, data);
                     return null;
                 }

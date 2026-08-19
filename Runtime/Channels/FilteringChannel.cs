@@ -54,6 +54,8 @@ namespace Likeon.NativeRelay
                 _inner.Send(seed, command, payload);
                 return;
             }
+            // 被能力矩阵拦下的命令不进原生层——真机上"请求秒回兜底码"的原因在此可见
+            if (RelayLog.Enabled) RelayLog.Info("filtered cmd=" + command + " seed=" + seed + " -> fallback code=" + _fallbackCode);
             OnResult?.Invoke(seed, _fallbackCode, _fallbackData);
         }
 

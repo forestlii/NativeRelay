@@ -5,6 +5,9 @@ All notable changes to NativeRelay are documented here. Format loosely follows
 
 ## [Unreleased]
 
+### Added
+- `RelayLog` — opt-in diagnostic tracing (default OFF) along the whole relay link: request issue, channel send, JNI in/out, native proxy callback, enqueue, dispatch, dropped-late-result, timeout, dispose-callback. Enable with `RelayLog.Enabled = true`; output goes through `RelayLog.Sink` (auto-wired to `Debug.Log` by `MainThreadDispatcher`, visible in logcat under the Unity tag). All call sites are guarded so the disabled steady state stays zero-alloc. Payload contents are never logged — only seed / command / timing routing info.
+
 ## [0.2.0] - 2026-06-29
 
 ### Changed (breaking)

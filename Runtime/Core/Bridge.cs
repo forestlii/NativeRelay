@@ -77,12 +77,14 @@ namespace Likeon.NativeRelay
 
             try
             {
+                if (RelayLog.Enabled) RelayLog.Info("request seed=" + seed + " cmd=" + command);
                 _channel.Send(seed, command, payload);
             }
-            catch
+            catch (Exception e)
             {
                 // 框架不处理错误：发送异常如实抛回业务（调用线程），但先撤掉刚登记的 pending 防泄漏。
                 _pump.TryCancel(seed, out _);
+                if (RelayLog.Enabled) RelayLog.Info("send threw seed=" + seed + " cmd=" + command + " : " + e.GetType().Name);
                 throw;
             }
 

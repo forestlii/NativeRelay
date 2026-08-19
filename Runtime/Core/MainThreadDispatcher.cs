@@ -53,6 +53,8 @@ namespace Likeon.NativeRelay
         {
             // 默认把业务回调异常记到 Console（方法组显式赋值，避开 ?? 目标类型转换的版本敏感性）。
             if (onError == null) onError = Debug.LogException;
+            // 诊断日志默认接到 Unity Console / 真机 logcat（业务可自行改指 RelayLog.Sink；开关在 RelayLog.Enabled）
+            if (RelayLog.Sink == null) RelayLog.Sink = msg => Debug.Log(msg);
             var bridge = new Bridge(channel, () => Now, timeoutSeconds, capacity, onError);
             Register(bridge);
             return bridge;

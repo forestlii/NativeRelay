@@ -77,6 +77,7 @@ namespace Likeon.NativeRelay
         /// </summary>
         public void Enqueue(long seed, int code, string data)
         {
+            if (RelayLog.Enabled) RelayLog.Info("result enqueued seed=" + seed + " code=" + code);
             _queue.Enqueue(new RelayMessage(seed, code, data));
         }
 
@@ -105,17 +106,26 @@ namespace Likeon.NativeRelay
             // 命中 pending 则在主线程把 (code, data) 交给业务；未命中 = 已超时清理/未知/重复结果 → 安全忽略。
             if (_pending.TryComplete(msg.Seed, out var ctx))
             {
+                if (RelayLog.Enabled) RelayLog.Info("dispatch seed=" + msg.Seed + " code=" + msg.Code);
                 SafeInvoke(ctx.OnResult, msg.Code, msg.Data);
+            }
+            else if (RelayLog.Enabled)
+            {
+                // 迟到结果（超时已回调、原生才回来）是链路排查的关键信号，必须可见
+                RelayLog.Info("result dropped, no pending seed=" + msg.Seed + " code=" + msg.Code);
             }
         }
 
         private void OnTimeout(long seed, PendingContext ctx)
         {
+            // 链路断点定位的第一现场：哪一跳没回来，从超时的 seed 往前追日志
+            if (RelayLog.Enabled) RelayLog.Info("timeout seed=" + seed);
             SafeInvoke(ctx.OnResult, RelayCode.Timeout, EmptyData);
         }
 
         private void OnDispose(long seed, PendingContext ctx)
         {
+            if (RelayLog.Enabled) RelayLog.Info("disposed-callback seed=" + seed);
             SafeInvoke(ctx.OnResult, RelayCode.Disposed, EmptyData);
         }
 
